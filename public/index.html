@@ -3,12 +3,16 @@
 <head>
     <script src="//cdn.jsdelivr.net/npm/phaser@3.24.1/dist/phaser.min.js"></script>
     <script src="https://cdn.socket.io/socket.io-3.0.1.min.js"></script>
-
+	<script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+  	<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+  	<script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
 </head>
 <body>
 	<button onclick="startCardDraw()">Start Game</button>
 	<button onclick="playHand()">Play Hand</button>
 	<button onclick='clearTable()'>Clear Table</button>
+	
+	<div id='scoreBoard'></div>
     <!-- <script>
 
     const socket = io();
@@ -91,5 +95,6 @@
     </script> -->
 
 </body>
-<script type="text/javascript" src='/js/game.js'></script>
+	<script type="text/javascript" src='/js/game.js'></script>
+	<script type="text/babel" src='/js/scoreBoard.js'></script>
 </html>
