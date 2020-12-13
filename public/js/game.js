@@ -27,9 +27,14 @@ function preload ()
 		for (var i = 0; i < suits.length; i++) {
 			for (var j = 0; j < val.length; j++) {
 				this.load.svg(`${val[j]}_of_${suits[i]}`, `svgs/${val[j]}_of_${suits[i]}.svg`);
+			}
 		}
 
-	}
+		var avatars = ['charmander_sm', 'squirtle', 'pikachu_sm']
+
+		for (var i = 0; i<avatars.length;i++) {
+			this.load.image(avatars[i], `svgs/avatars/${avatars[i]}.jpg`)
+		}	
 
 }
 
@@ -46,14 +51,18 @@ socket.on('playerid', function(id){
 })
 
 
-function tableSeating (radius, playerId) {
-	
-	return {x: x, y: y}
-
-}
-
 function create ()
     {
+
+	var avatars = ['charmander_sm', 'squirtle', 'pikachu_sm']
+	var avatarGroup = this.add.group()
+
+	for (var i = 0; i < avatars.length; i++) {
+		var seatPlacement = this.add.image(100 + i * 100,100, avatars[i]).setInteractive()
+		seatPlacement.setData({'group': 'avatar'})
+		avatarGroup.add(seatPlacement)
+	}
+
     // var centerX = this.cameras.main.centerX 
     // var centerY = this.cameras.main.centerY 
     // var self = this
@@ -69,6 +78,7 @@ function create ()
 		var playerInfo = data.playerInfo
 
 		console.log(playerInfo)
+		
 		// var playerInfo2 = data.playerInfo
 		// reorder players array such that player is always in same spot ie index 0 but player order is the same
 		var sliceInd = playerList.indexOf(playerid)
@@ -90,7 +100,24 @@ function create ()
 
 			var x = this.cameras.main.centerX + radius * Math.cos(angle) 
 			var y = this.cameras.main.centerY - radius * Math.sin(angle)
-			this.add.text(x,y, playerOrderInfo[i].name)
+			var playerAv = this.add.image(x, y, playerOrderInfo[i].avatar).setInteractive()
+
+			var text = this.add.text(x,y - 40, playerOrderInfo[i].name).setInteractive()
+
+			text.setData('id', playerOrderInfo[i].id)
+
+			text.input.hitArea.setSize(400,400)
+
+			text.on('pointerdown', function(data) {
+				console.log(data.downX, data.downY)
+				console.log(this._text, this.getData('id'))
+				console.log(this.data.values)
+			})
+			// text.inputEnabled = true;
+			// text.events.onInputDown.add(function(data) {
+			// 	console.log(this, data)
+			// }, this);
+
 			// this.add.text(400, 300, 'wtf')
 		console.log(x,y, playerOrderInfo[i].name)	
 		}
@@ -102,47 +129,51 @@ function create ()
     // var dropZoneCardsGroup = game.add.group()  // what cards were played in drop zone 
     // var cardRound = game.add.group()
 
+	// var cardsOnTable = this.add.group()
+	// var yourHand = this.add.group()
 
     socket.on('deal', (data)=> {
 		// console.log(data)
+
 		var card = this.add.sprite(30 * data.count + 50, 200, data.card).setScale(0.5, 0.5).setName(data.card).setInteractive()
-		// var card = this.add.sprite(30 * data.count + 50, 200, data.card).setScale(0.5, 0.5).setInteractive({ draggable: true })
-        
         
         // card.on('pointerdown', function(pointer, localX, localY, event) {
         // 	console.log(pointer, localX, localY, event)
         // 	this.setTint(0xff0000)
 
-        // 	this.y = this.y - 20
-        // })
-
-        card.on('pointerup', function(pointer){
-        	this.clearTint()
-        })
-
         // this.input.setDraggable(card);
 	})
 	
 	this.input.on('gameobjectdown', function (pointer, gameObject) {
-	//     gameObject.setTint(0xff69b4);
-	    // console.log(this)
-	    gameObject.setTint(0xff0000)
-	    var cardClicked = gameObject.texture.key
-	    console.log(gameObject)
-	    if (!dropZoneCards.includes(cardClicked)) {
-	    	// if haven't selected this card yet, move it up, add to selected list 
-	    	gameObject.y = gameObject.y - 20
-	    	dropZoneCards.push(gameObject.texture.key)
-	    	dropZoneCardsSprites.push(gameObject)	
-	    	// console.log(dropZoneCardsSprites)
-	    } else {
-	    	// remove and move it back down 
-	    	gameObject.y = gameObject.y + 20
-	    	var cardIndex = dropZoneCards.indexOf(cardClicked)	    	
-	    	dropZoneCards = dropZoneCards.filter(x=> x != cardClicked)
-	    	dropZoneCardsSprites.splice(cardIndex, 1)  // remove gameobject from array
-	    	// console.log(dropZoneCardsSprites)
-	    }	   
+		console.log(gameObject)
+		
+		if (gameObject.getData('group') == 'avatar') {
+			// tell server which avatar you picked and remove 
+			avatarGroup.clear(true, true)			
+			socket.emit('avatar', {avatar: gameObject.texture.key, id: playerid})
+		}
+
+		// need to check if it's a card b/c will also trigger for clicked text
+	    if(gameObject.type == "Sprite") {
+	    	gameObject.setTint(0xff0000)
+		    var cardClicked = gameObject.texture.key
+		    console.log(gameObject)
+		    if (!dropZoneCards.includes(cardClicked)) {
+		    	// if haven't selected this card yet, move it up, add to selected list 
+		    	gameObject.y = gameObject.y - 20
+		    	dropZoneCards.push(gameObject.texture.key)
+		    	dropZoneCardsSprites.push(gameObject)	
+		    	// console.log(dropZoneCardsSprites)
+		    } else {
+		    	// remove and move it back down 
+		    	gameObject.y = gameObject.y + 20
+		    	var cardIndex = dropZoneCards.indexOf(cardClicked)	    	
+		    	dropZoneCards = dropZoneCards.filter(x=> x != cardClicked)
+		    	dropZoneCardsSprites.splice(cardIndex, 1)  // remove gameobject from array
+		    	// console.log(dropZoneCardsSprites)
+		    }	   
+		    
+	    }
 	    
 	    console.log(gameObject.texture.key)
 	//     // self.children.bringToTop(gameObject);
@@ -182,21 +213,21 @@ function create ()
 	// })
 	
 
-	this.input.on('drop', function (pointer, gameObject, dropZone) {
-		console.log(gameObject)		
-		console.log(gameObject.texture.key)
-		console.log(dropZone.data)
+	// this.input.on('drop', function (pointer, gameObject, dropZone) {
+	// 	console.log(gameObject)		
+	// 	console.log(gameObject.texture.key)
+	// 	console.log(dropZone.data)
 
-	    dropZone.data.values.cards++;
-	    dropZoneCards.push(gameObject.texture.key)
-	    dropZoneCardsSprites.push(gameObject)
-	    console.log(dropZoneCards)
+	//     dropZone.data.values.cards++;
+	//     dropZoneCards.push(gameObject.texture.key)
+	//     dropZoneCardsSprites.push(gameObject)
+	//     console.log(dropZoneCards)
 
-	    gameObject.x = (dropZone.x - 350) + (dropZone.data.values.cards * 50);
-	    gameObject.y = dropZone.y;	
-	    // gameObject.disableInteractive();
-	    // this.socket.emit('cardPlayed', gameObject, self.isPlayerA);
-	})
+	//     gameObject.x = (dropZone.x - 350) + (dropZone.data.values.cards * 50);
+	//     gameObject.y = dropZone.y;	
+	//     // gameObject.disableInteractive();
+	//     // this.socket.emit('cardPlayed', gameObject, self.isPlayerA);
+	// })
 
 	socket.on('cardPlayed', (handPlayed)=> {
 		var hand = handPlayed.cards
@@ -204,6 +235,7 @@ function create ()
 		// show to everybody which cards server is telling us were played -- place card as if you're at the bottom always 
 		// console.log(this.cameras.main.centerX, this.cameras.main.centerY)
 		// 
+		var cardRound = this.add.group()
 
 
 		var wedge = 2*Math.PI/playerOrder.length // browser user 0 is at 270 degrees and every person after is 360/# of players minus 
@@ -216,10 +248,10 @@ function create ()
 		var y = this.cameras.main.centerY - radius * Math.sin(angle)
 		console.log(self, this)
 		for (var i = 0; i < hand.length; i++) {
-			console.log(hand[i])
-			var card = this.add.sprite(30 * i + x, y, hand[i]).setScale(0.5, 0.5).setInteractive({ draggable: true })	
+			// console.log(hand[i])
+			var card = this.add.sprite(30 * i + x, y, hand[i]).setScale(0.5, 0.5)
 			cardsPlayed.push(card)
-			console.log(card)
+			// console.log(card)
 		}
 		console.log(cardsPlayed)
 	})

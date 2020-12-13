@@ -144,6 +144,11 @@ io.on('connection', function (socket) {
     	io.emit('playing order', playerInfo)
     })
 
+    socket.on('avatar', function(data){
+    	console.log(data)
+    	var order = players.indexOf(data.id)
+    	playerInfo[order].avatar = data.avatar    	
+    })
     // socket.on("disconnect", () => {
     //     console.log(socket.id, "Client disconnected");
     //     // remove player from list when disconnect and update player info 
