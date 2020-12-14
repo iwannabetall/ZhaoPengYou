@@ -50,7 +50,6 @@ socket.on('playerid', function(id){
 	playerid = id
 })
 
-
 function create ()
     {
 
@@ -63,9 +62,11 @@ function create ()
 		avatarGroup.add(seatPlacement)
 	}
 
+	var avatarBoxGroup = this.add.group()  // group for avatar boxes
+
     // var centerX = this.cameras.main.centerX 
     // var centerY = this.cameras.main.centerY 
-    // var self = this
+    var self = this
     // console.log(self, this)
 
     // make sure to use arrow function for call back or "this" gets wrong reference 
@@ -101,9 +102,18 @@ function create ()
 			var x = this.cameras.main.centerX + radius * Math.cos(angle) 
 			var y = this.cameras.main.centerY - radius * Math.sin(angle)
 			var playerAv = this.add.image(x, y, playerOrderInfo[i].avatar).setInteractive()
+			playerAv.setData('id', playerOrderInfo[i].id)
+			playerAv.setData('x', x)
+			playerAv.setData('y', y)
+			playerAv.setData('type', 'playingPic')
+			var boxLength = 150 
+			var highlightPlayer = this.add.rectangle(x, y, boxLength, boxLength)
+			highlightPlayer.setStrokeStyle(4, 0xefc53f)
+			highlightPlayer.setData('id', playerOrderInfo[i].id).setVisible(false)
+			avatarBoxGroup.add(highlightPlayer)
 
-			var text = this.add.text(x,y - 40, playerOrderInfo[i].name).setInteractive()
-
+			var text = this.add.text(x - 40,y - 40, playerOrderInfo[i].name).setInteractive()
+			text.setData('type', 'playingPic')
 			text.setData('id', playerOrderInfo[i].id)
 
 			text.input.hitArea.setSize(400,400)
@@ -119,7 +129,7 @@ function create ()
 			// }, this);
 
 			// this.add.text(400, 300, 'wtf')
-		console.log(x,y, playerOrderInfo[i].name)	
+		// console.log(x,y, playerOrderInfo[i].name)	
 		}
 		
 		
@@ -145,14 +155,33 @@ function create ()
 	})
 	
 	this.input.on('gameobjectdown', function (pointer, gameObject) {
-		console.log(gameObject)
+		console.log(gameObject.getData('type') )
 		
+		// when picking avatars at the beg
 		if (gameObject.getData('group') == 'avatar') {
 			// tell server which avatar you picked and remove 
 			avatarGroup.clear(true, true)			
 			socket.emit('avatar', {avatar: gameObject.texture.key, id: playerid})
 		}
 
+		// when clicking avatars to select who won 
+		if (gameObject.getData('type') == 'playingPic') {
+			var winner = gameObject.getData('id')
+			avatarBoxGroup.setVisible(false)
+			console.log(avatarBoxGroup.getChildren(), avatarBoxGroup.length)
+			var avatarBorders = avatarBoxGroup.getChildren()
+			
+			for (var i = 0; i<avatarBorders.length; i++) {				
+				console.log(avatarBorders[i].getData('id'))
+				if (avatarBorders[i].getData('id') == winner){
+					avatarBorders[i].setVisible(true)
+				}
+			}
+			
+			// need to eventually check to see that everybody has played before letting people click 
+			socket.emit('round winner', {id: winner})
+
+		}
 		// need to check if it's a card b/c will also trigger for clicked text
 	    if(gameObject.type == "Sprite") {
 	    	gameObject.setTint(0xff0000)
@@ -242,7 +271,7 @@ function create ()
 		var playerIndex = playerOrder.indexOf(playerId)
 		console.log(playerIndex, playerOrder, playerId)
 		var angle = 3 * (Math.PI) / 2 - playerIndex * wedge
-		var radius = 300
+		var radius = 250
 
 		var x = this.cameras.main.centerX + radius * Math.cos(angle) 
 		var y = this.cameras.main.centerY - radius * Math.sin(angle)
@@ -258,6 +287,8 @@ function create ()
 
 	socket.on('clearTable', ()=>{
 		// clearRound()
+		avatarBoxGroup.setVisible(false)
+		
 		cardsPlayed.forEach((card)=> card.destroy())
 		cardsPlayed = []
 	})

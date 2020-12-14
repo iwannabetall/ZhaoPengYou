@@ -7,7 +7,8 @@ class Scoreboard extends React.Component {
 		this.state = {
 			playerInfo: null,
 			name: '',
-			pointsOnTable: 0
+			pointsOnTable: 0,
+			scoreBoard: null
 		}
 	}
 
@@ -36,13 +37,21 @@ class Scoreboard extends React.Component {
     			pointsOnTable: data.points
     		})
     	})
+
+    	socket.on('updateScore', (data)=> {
+    		console.log(data)
+    		this.setState({
+    			scoreBoard: data.scoreBoard
+    		})
+    	})
 	}
 
+	// {this.state.playerInfo && <PlayerOrder players={this.state.playerInfo}/>}
 	render() {
 		return (
 			<div>
-				{this.state.playerInfo && <PlayerOrder players={this.state.playerInfo}/>}
 				{this.state.name == '' && <PlayerName setName={() => this.setName()} name={this.state.name}/>}
+				{this.state.scoreBoard && <Rankings score={this.state.scoreBoard}/>}
 			</div>
 			)
 	}
@@ -65,6 +74,15 @@ function PlayerName(props){
 		</form>
 		)
 	
+}
+
+function Rankings (props) {
+	return (
+			<div>
+				<h1>Score</h1>
+				{props.score.map(player=><div key={player.id}>{player.name}  {player.points}</div>)}
+			</div>
+		)
 }
 
 

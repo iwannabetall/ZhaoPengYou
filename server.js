@@ -25,8 +25,10 @@ var playerInfo = [];
 var gameHistory = [] //array of round History
 var roundHistory = {} // contains cardHisotry, points scored and by whom 
 var cardHistory = [] // cards played in a round by each player, embedded in roundHistory
-var pointsInRound = 0 // 
+var pointsInRound = 0 // points played in a round 
+var votes = 0 
 var roundWinner // who won the round, either points or team
+var scoreBoardData = [] // what points and levels each player has.  should track who was zhuang in each game and what the teams were 
 
 var cardDeck = ['ace_of_spades', '2_of_spades', '3_of_spades', '4_of_spades', '5_of_spades', '6_of_spades', '7_of_spades', '8_of_spades', '9_of_spades', '10_of_spades', 'jack_of_spades', 'queen_of_spades', 'king_of_spades', 'ace_of_diamonds', '2_of_diamonds', '3_of_diamonds', '4_of_diamonds', '5_of_diamonds', '6_of_diamonds', '7_of_diamonds', '8_of_diamonds', '9_of_diamonds', '10_of_diamonds', 'jack_of_diamonds', 'queen_of_diamonds', 'king_of_diamonds', 'ace_of_clubs', '2_of_clubs', '3_of_clubs', '4_of_clubs', '5_of_clubs', '6_of_clubs', '7_of_clubs', '8_of_clubs', '9_of_clubs', '10_of_clubs', 'jack_of_clubs', 'queen_of_clubs', 'king_of_clubs', 'ace_of_hearts', '2_of_hearts', '3_of_hearts', '4_of_hearts', '5_of_hearts', '6_of_hearts', '7_of_hearts', '8_of_hearts', '9_of_hearts', '10_of_hearts', 'jack_of_hearts', 'queen_of_hearts', 'king_of_hearts', 'red_joker', 'black_joker']
 
@@ -68,8 +70,12 @@ io.on('connection', function (socket) {
     // tell player their socket id when they connect 
     io.to(socket.id).emit('playerid', socket.id)
 
+    var randomNames = ['squirtle', 'pikachu', 'snorlax']
+    var basicInfo = {name: randomNames[Math.round(Math.random()*2)], id: socket.id}
     players.push(socket.id);
-    playerInfo.push({name: null, id: socket.id})
+    playerInfo.push(basicInfo)
+    basicInfo.points = 0 
+    scoreBoardData.push(basicInfo)
 
     socket.on('draw cards', function () {
 
@@ -94,9 +100,22 @@ io.on('connection', function (socket) {
 		console.log('deal cards')
     });
 
+    socket.on('round winner', function(data){
+    	// record who won the round 
+    	roundHistory.winner = data.id
+    	// console.log(data)
+    	// make sure at least two people clicked the same person before give them points
+
+    	var scoreBoardOrder = scoreBoardData.map(x => x.id)
+
+    	scoreBoardData[scoreBoardOrder.indexOf(data.id)].points = scoreBoardData[scoreBoardOrder.indexOf(data.id)].points + pointsInRound
+    	io.emit('updateScore', {scoreBoard: scoreBoardData})
+    })
+
     socket.on('playHand', function (cardHand) {
-    	// server needs to keep track of what cards are played in a round and who plays it so we can clear the hand later / track for history 
+    	// server needs to keep track of what cards are played in a round and who plays it so we can clear the hand later / track for history     	
     	//array of objects w/keys where user is the key and cards is the value
+    	// check see that it's that player's turn to play their hand 
     	console.log('play', cardHand)
     	for (var i = 0; i < cardHand.cards.length; i++) {    		
     		pointsInRound = pointsInRound + countPoints(cardHand.cards[i])
@@ -120,6 +139,7 @@ io.on('connection', function (socket) {
     	// tell what cards were played that round
     	io.emit('clearTable')
 
+
     	// reset round data 
     	pointsInRound = 0
     	roundHistory = {}
@@ -128,8 +148,13 @@ io.on('connection', function (socket) {
 
     socket.on('disconnect', function () {
         console.log('A user disconnected: ' + socket.id);
+    	var competitors = scoreBoardData.map(x => x.id)
+    	var removeP = competitors.indexOf(socket.id)
+
+    	scoreBoardData.splice(removeP, 1)
+    	// DO I NEED TO UPDATE THE SCOREBOARD WHEN A PLAYER LEAVES??!?  prob no need to?? 
+
         var index = players.indexOf(socket.id)
-        
         playerInfo.splice(index, 1)  // remove player that just disconnected (if we assign this to a var, it's equal to the item removed)
         // console.log(playerInfo)
         players = players.filter(player => player !== socket.id);
@@ -137,10 +162,13 @@ io.on('connection', function (socket) {
     });
 
     socket.on('set name', function(data) {  
-    	// console.log(data)  	
+    	// console.log(data) 
     	var order = players.indexOf(data.id)
     	// console.log('set name', players, playerInfo, data, order)
     	playerInfo[order].name = data.name
+    	scoreBoardData[order].name = data.name
+    	console.log('scoreBoardData', scoreBoardData)
+
     	io.emit('playing order', playerInfo)
     })
 
