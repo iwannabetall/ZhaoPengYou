@@ -36,7 +36,7 @@ function preload ()
 
 		for (var i = 0; i<avatars.length;i++) {
 			this.load.image(avatars[i], `svgs/avatars/${avatars[i]}.jpg`)
-		}	
+		}
 
 }
 
@@ -47,6 +47,9 @@ var playerid
 var seatOrder
 var playerOrder
 var playerOrderInfo 
+var yourHandList = []  
+var yourHand
+var self
 
 socket.on('playerid', function(id){	
 	playerid = id
@@ -68,7 +71,7 @@ function create ()
 
     // var centerX = this.cameras.main.centerX 
     // var centerY = this.cameras.main.centerY 
-    var self = this
+    self = this
     // console.log(self, this)
 
     // make sure to use arrow function for call back or "this" gets wrong reference 
@@ -133,8 +136,7 @@ function create ()
 			// this.add.text(400, 300, 'wtf')
 		// console.log(x,y, playerOrderInfo[i].name)	
 		}
-		
-		
+			
 	})
 
     // create group for hand played and round of hands played -- game is undefined??
@@ -142,9 +144,9 @@ function create ()
     // var cardRound = game.add.group()
 
 	// var cardsOnTable = this.add.group()
-	var yourHand = this.add.group()
-	var yourHandList = []
-
+	// yourHand = this.add.group()
+	yourHand = []
+	
     socket.on('deal', (data)=> {
 		console.log(data.card)
 		
@@ -152,8 +154,9 @@ function create ()
 
 		var card = this.add.sprite(30 * data.count + 50, 200, data.card).setScale(0.5, 0.5).setName(data.card).setInteractive()
 
-        yourHand.add(card)
-        console.log(yourHandList)
+		yourHand.push(card)
+        // yourHand.add(card)
+        // console.log(yourHandList)
         // card.on('pointerdown', function(pointer, localX, localY, event) {
         // 	console.log(pointer, localX, localY, event)
         // 	this.setTint(0xff0000)
@@ -327,22 +330,32 @@ function startCardDraw() {
 	console.log('it works')
 }
 
-function sortHand(cards) {
-	// pass zhu in as paramter 
+function sortHand(cards, currentCardObj, zhuSuit) {
 
-	var cards = ["3_of_spades", "5_of_hearts", "3_of_hearts", "3_of_clubs", "4_of_clubs", "jack_of_clubs", "4_of_hearts", "4_of_spades", "5_of_spades", "rking_of_clubs", "90_of_diamonds", "5_of_diamonds", "910_of_diamonds", "6_of_diamonds", "5_of_clubs", "zace_of_clubs", "910_of_spades", "black_joker", "2_of_spades", "red_joker", "jack_of_diamonds", "4_of_diamonds", "2_of_diamonds", "8_of_hearts", "910_of_hearts", "zace_of_spades", "queen_of_spades", "3_of_diamonds", "8_of_diamonds", "90_of_spades", "8_of_spades", "2_of_hearts", "90_of_clubs", "queen_of_clubs", "7_of_spades", "8_of_clubs", "queen_of_hearts", "rking_of_hearts", "queen_of_diamonds", "jack_of_spades", "2_of_clubs", "6_of_hearts", "zace_of_diamonds", "zace_of_hearts", "jack_of_hearts", "910_of_clubs"]
+	// pass zhu in as paramter 
+	yourHand.forEach((card)=> card.destroy())
+
 	var zhu = '2'
 	var suits = ['diamonds', 'spades', 'clubs', 'hearts'];
 	var val = ['zace','2','3','4','5','6','7','8','90','910','jack','queen','rking'];
 	var sortedHand = []
-	
+
 	for (var i = 0; i < suits.length; i++) {
 		// sort by suit 
-		var cardsBySuit = cards.filter(x=>x.includes(suits[i]))
-		sortedHand.push(cardsBySuit)
+		var cardsBySuit = yourHandList.filter(x=>x.includes(suits[i]))
+		sortedHand = sortedHand.concat(cardsBySuit.sort())
 	}
-	// handle jokers 
+	// handle zhu number and jokers
+	var jokers = yourHandList.filter(x=>x.includes('joker'))
+	sortedHand = sortedHand.concat(jokers)
+	console.log(sortedHand)
 
+	for (var i = 0; i < sortedHand.length; i++){
+		self.add.sprite(30 * i + 50, 200, sortedHand[i]).setScale(0.5, 0.5).setName(sortedHand[i]).setInteractive()	
+	}
+
+	// how do i update yourHandList mid deal w/o missing a card??? --should prob sort server side?? 
+	
 }
 // function setName() {
 // 	var name = document.getElementById('name').value
