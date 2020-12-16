@@ -62,6 +62,16 @@ function countPoints(card) {
 	}
 }
 
+function dealCards(cardInd, players, cardCount){
+	if (cardInd % players.length == 0) {
+		cardCount = cardCount + 1
+	}
+	var whichPlayer = cardInd % players.length			
+	io.to(players[whichPlayer]).emit('deal', {card: shuffledCards[cardInd], count: cardCount});
+	cardInd = cardInd + 1
+	console.log('deal cards')
+}
+
 
 io.on('connection', function (socket) {
 
@@ -78,27 +88,43 @@ io.on('connection', function (socket) {
     scoreBoardData.push(basicInfo)
 
     socket.on('draw cards', function () {
-
+    	
     	for (var i = 0; i < players.length; i++) {
     		io.to(players[i]).emit('startGame', {order: i, players: players, playerInfo: playerInfo})  	
     	}    	
 	
         var shuffledCards = shuffle(cardDeck)
-        console.log(shuffledCards)
+        // console.log(shuffledCards)
         var cardInd = 0
         var kouDi = 8  // number of cards at bottom 
-        var cardCount = 0
-        
-		while (cardInd < shuffledCards.length - kouDi) {
-			if (cardInd % players.length == 0) {
-				cardCount = cardCount + 1
-			}
-			var whichPlayer = cardInd % players.length			
-			io.to(players[whichPlayer]).emit('deal', {card: shuffledCards[cardInd], count: cardCount});
-			cardInd = cardInd + 1
-		}
-		console.log('deal cards')
-    });
+    	var cardCount = 0
+
+        var dealer = setInterval(function() {
+        	
+        	console.log(cardInd, cardCount)
+        	// console.log('wtf', players, shuffledCards)
+        	if (cardInd < shuffledCards.length - kouDi){
+        		if (cardInd % players.length == 0) {
+					cardCount = cardCount + 1
+				}
+				var whichPlayer = cardInd % players.length
+				io.to(players[whichPlayer]).emit('deal', {card: shuffledCards[cardInd], count: cardCount});
+				cardInd = cardInd + 1	
+        	} else {
+        		console.log('stop dealing')
+        		clearInterval(dealer)
+        	}
+        	
+			console.log(`deal ${shuffledCards[cardInd]}`)
+        }, 1000)
+   		
+    	// while (cardInd < shuffledCards.length - kouDi) {
+    	// 	setTimeout(wtf, 1000)
+    	// // 	setTimeout(dealCards, 500, cardInd, players, cardCount) 
+    	// // 	// var dealer = setTimeout(wtf, 500)
+    	// }
+    	
+	});
 
     socket.on('round winner', function(data){
     	// record who won the round 

@@ -30,7 +30,7 @@ function preload ()
 			}
 		}
 
-		var avatars = ['charmander_sm', 'squirtle', 'pikachu_sm']
+		var avatars = ['charmander_sm', 'squirtle', 'pikachu_sm', 'snorlax']
 
 		for (var i = 0; i<avatars.length;i++) {
 			this.load.image(avatars[i], `svgs/avatars/${avatars[i]}.jpg`)
@@ -53,11 +53,11 @@ socket.on('playerid', function(id){
 function create ()
     {
 
-	var avatars = ['charmander_sm', 'squirtle', 'pikachu_sm']
+	var avatars = ['charmander_sm', 'squirtle', 'pikachu_sm', 'snorlax']
 	var avatarGroup = this.add.group()
 
 	for (var i = 0; i < avatars.length; i++) {
-		var seatPlacement = this.add.image(100 + i * 100,100, avatars[i]).setInteractive()
+		var seatPlacement = this.add.image(100 + i * 170,100, avatars[i]).setInteractive()
 		seatPlacement.setData({'group': 'avatar'})
 		avatarGroup.add(seatPlacement)
 	}
@@ -288,7 +288,7 @@ function create ()
 	socket.on('clearTable', ()=>{
 		// clearRound()
 		avatarBoxGroup.setVisible(false)
-		
+
 		cardsPlayed.forEach((card)=> card.destroy())
 		cardsPlayed = []
 	})
