@@ -22,8 +22,10 @@ var game = new Phaser.Game(config);
 
 function preload ()
 	{
+		var cards = []
+		// rename cards b/c can just sort array with sort func b/c treats as string 
 		var suits = ['diamonds', 'spades', 'clubs', 'hearts'];
-		var val = ['ace','2','3','4','5','6','7','8','9','10','jack','queen','king'];
+		var val = ['zace','2','3','4','5','6','7','8','90','910','jack','queen','rking'];
 		for (var i = 0; i < suits.length; i++) {
 			for (var j = 0; j < val.length; j++) {
 				this.load.svg(`${val[j]}_of_${suits[i]}`, `svgs/${val[j]}_of_${suits[i]}.svg`);
@@ -140,13 +142,18 @@ function create ()
     // var cardRound = game.add.group()
 
 	// var cardsOnTable = this.add.group()
-	// var yourHand = this.add.group()
+	var yourHand = this.add.group()
+	var yourHandList = []
 
     socket.on('deal', (data)=> {
-		// console.log(data)
+		console.log(data.card)
+		
+		yourHandList.push(data.card)
 
 		var card = this.add.sprite(30 * data.count + 50, 200, data.card).setScale(0.5, 0.5).setName(data.card).setInteractive()
-        
+
+        yourHand.add(card)
+        console.log(yourHandList)
         // card.on('pointerdown', function(pointer, localX, localY, event) {
         // 	console.log(pointer, localX, localY, event)
         // 	this.setTint(0xff0000)
@@ -320,6 +327,23 @@ function startCardDraw() {
 	console.log('it works')
 }
 
+function sortHand(cards) {
+	// pass zhu in as paramter 
+
+	var cards = ["3_of_spades", "5_of_hearts", "3_of_hearts", "3_of_clubs", "4_of_clubs", "jack_of_clubs", "4_of_hearts", "4_of_spades", "5_of_spades", "rking_of_clubs", "90_of_diamonds", "5_of_diamonds", "910_of_diamonds", "6_of_diamonds", "5_of_clubs", "zace_of_clubs", "910_of_spades", "black_joker", "2_of_spades", "red_joker", "jack_of_diamonds", "4_of_diamonds", "2_of_diamonds", "8_of_hearts", "910_of_hearts", "zace_of_spades", "queen_of_spades", "3_of_diamonds", "8_of_diamonds", "90_of_spades", "8_of_spades", "2_of_hearts", "90_of_clubs", "queen_of_clubs", "7_of_spades", "8_of_clubs", "queen_of_hearts", "rking_of_hearts", "queen_of_diamonds", "jack_of_spades", "2_of_clubs", "6_of_hearts", "zace_of_diamonds", "zace_of_hearts", "jack_of_hearts", "910_of_clubs"]
+	var zhu = '2'
+	var suits = ['diamonds', 'spades', 'clubs', 'hearts'];
+	var val = ['zace','2','3','4','5','6','7','8','90','910','jack','queen','rking'];
+	var sortedHand = []
+	
+	for (var i = 0; i < suits.length; i++) {
+		// sort by suit 
+		var cardsBySuit = cards.filter(x=>x.includes(suits[i]))
+		sortedHand.push(cardsBySuit)
+	}
+	// handle jokers 
+
+}
 // function setName() {
 // 	var name = document.getElementById('name').value
 // 	socket.emit('set name', {name: name, id: playerid })

@@ -30,7 +30,7 @@ var votes = 0
 var roundWinner // who won the round, either points or team
 var scoreBoardData = [] // what points and levels each player has.  should track who was zhuang in each game and what the teams were 
 
-var cardDeck = ['ace_of_spades', '2_of_spades', '3_of_spades', '4_of_spades', '5_of_spades', '6_of_spades', '7_of_spades', '8_of_spades', '9_of_spades', '10_of_spades', 'jack_of_spades', 'queen_of_spades', 'king_of_spades', 'ace_of_diamonds', '2_of_diamonds', '3_of_diamonds', '4_of_diamonds', '5_of_diamonds', '6_of_diamonds', '7_of_diamonds', '8_of_diamonds', '9_of_diamonds', '10_of_diamonds', 'jack_of_diamonds', 'queen_of_diamonds', 'king_of_diamonds', 'ace_of_clubs', '2_of_clubs', '3_of_clubs', '4_of_clubs', '5_of_clubs', '6_of_clubs', '7_of_clubs', '8_of_clubs', '9_of_clubs', '10_of_clubs', 'jack_of_clubs', 'queen_of_clubs', 'king_of_clubs', 'ace_of_hearts', '2_of_hearts', '3_of_hearts', '4_of_hearts', '5_of_hearts', '6_of_hearts', '7_of_hearts', '8_of_hearts', '9_of_hearts', '10_of_hearts', 'jack_of_hearts', 'queen_of_hearts', 'king_of_hearts', 'red_joker', 'black_joker']
+var cardDeck = ["zace_of_diamonds", "2_of_diamonds", "3_of_diamonds", "4_of_diamonds", "5_of_diamonds", "6_of_diamonds", "7_of_diamonds", "8_of_diamonds", "90_of_diamonds", "910_of_diamonds", "jack_of_diamonds", "queen_of_diamonds", "rking_of_diamonds", "zace_of_spades", "2_of_spades", "3_of_spades", "4_of_spades", "5_of_spades", "6_of_spades", "7_of_spades", "8_of_spades", "90_of_spades", "910_of_spades", "jack_of_spades", "queen_of_spades", "rking_of_spades", "zace_of_clubs", "2_of_clubs", "3_of_clubs", "4_of_clubs", "5_of_clubs", "6_of_clubs", "7_of_clubs", "8_of_clubs", "90_of_clubs", "910_of_clubs", "jack_of_clubs", "queen_of_clubs", "rking_of_clubs", "zace_of_hearts", "2_of_hearts", "3_of_hearts", "4_of_hearts", "5_of_hearts", "6_of_hearts", "7_of_hearts", "8_of_hearts", "90_of_hearts", "910_of_hearts", "jack_of_hearts", "queen_of_hearts", "rking_of_hearts", 'red_joker', 'black_joker']
 
 function shuffle(array) {
     // Fisher-Yates (aka Knuth) Shuffle
@@ -40,20 +40,20 @@ function shuffle(array) {
     while (0 !== currentIndex) {
 
     // Pick a remaining element...
-    randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex -= 1;
+	    randomIndex = Math.floor(Math.random() * currentIndex);
+	    currentIndex -= 1;
 
-    // And swap it with the current element.
-    temporaryValue = array[currentIndex];
-    array[currentIndex] = array[randomIndex];
-    array[randomIndex] = temporaryValue;
+	    // And swap it with the current element.
+	    temporaryValue = array[currentIndex];
+	    array[currentIndex] = array[randomIndex];
+	    array[randomIndex] = temporaryValue;
     }
 
     return array;
 }
 
 function countPoints(card) {
-	if (card.includes(10) || card.includes('king')) {		
+	if (card.includes(910) || card.includes('rking')) {		
 		return 10
 	} else if (card.includes(5)){
 		return 5
@@ -99,31 +99,37 @@ io.on('connection', function (socket) {
         var kouDi = 8  // number of cards at bottom 
     	var cardCount = 0
 
-        var dealer = setInterval(function() {
+    	var cardInd = 0
+        var kouDi = 8  // number of cards at bottom 
+        var cardCount = 0
+        
+		while (cardInd < shuffledCards.length - kouDi) {
+			if (cardInd % players.length == 0) {
+				cardCount = cardCount + 1
+			}
+			var whichPlayer = cardInd % players.length			
+			io.to(players[whichPlayer]).emit('deal', {card: shuffledCards[cardInd], count: cardCount});
+			cardInd = cardInd + 1
+		}
+   //      var dealer = setInterval(function() {
         	
-        	console.log(cardInd, cardCount)
-        	// console.log('wtf', players, shuffledCards)
-        	if (cardInd < shuffledCards.length - kouDi){
-        		if (cardInd % players.length == 0) {
-					cardCount = cardCount + 1
-				}
-				var whichPlayer = cardInd % players.length
-				io.to(players[whichPlayer]).emit('deal', {card: shuffledCards[cardInd], count: cardCount});
-				cardInd = cardInd + 1	
-        	} else {
-        		console.log('stop dealing')
-        		clearInterval(dealer)
-        	}
+   //      	console.log(cardInd, cardCount)
+   //      	// console.log('wtf', players, shuffledCards)
+   //      	if (cardInd < shuffledCards.length - kouDi){
+   //      		if (cardInd % players.length == 0) {
+			// 		cardCount = cardCount + 1
+			// 	}
+			// 	var whichPlayer = cardInd % players.length
+			// 	io.to(players[whichPlayer]).emit('deal', {card: shuffledCards[cardInd], count: cardCount});
+			// 	cardInd = cardInd + 1	
+   //      	} else {
+   //      		console.log('stop dealing')
+   //      		clearInterval(dealer)
+   //      	}
         	
-			console.log(`deal ${shuffledCards[cardInd]}`)
-        }, 1000)
+			// console.log(`deal ${shuffledCards[cardInd]}`)
+   //      }, 1000)
    		
-    	// while (cardInd < shuffledCards.length - kouDi) {
-    	// 	setTimeout(wtf, 1000)
-    	// // 	setTimeout(dealCards, 500, cardInd, players, cardCount) 
-    	// // 	// var dealer = setTimeout(wtf, 500)
-    	// }
-    	
 	});
 
     socket.on('round winner', function(data){
