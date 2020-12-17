@@ -8,7 +8,10 @@ class Scoreboard extends React.Component {
 			playerInfo: null,
 			name: '',
 			pointsOnTable: 0,
-			scoreBoard: null
+			scoreBoard: null,
+			level: 2,
+			zhuSuit: null,
+			zhuangJia: null
 		}
 	}
 
@@ -51,7 +54,7 @@ class Scoreboard extends React.Component {
 		return (
 			<div>
 				{this.state.name == '' && <PlayerName setName={() => this.setName()} name={this.state.name}/>}
-				{this.state.scoreBoard && <Rankings score={this.state.scoreBoard}/>}
+				{this.state.scoreBoard && <Rankings score={this.state.scoreBoard} level={this.state.level}/>}
 			</div>
 			)
 	}
@@ -59,7 +62,7 @@ class Scoreboard extends React.Component {
 }
 
 function PlayerOrder (props) {
-	return (
+	return (		
 		<div> {props.players.map(player => <div key={player.id}>{player.name}</div>)}
 		</div>)
 }
@@ -80,6 +83,7 @@ function Rankings (props) {
 	return (
 			<div>
 				<h1>Score</h1>
+				<h3>Level: {props.level}</h3>
 				{props.score.map(player=><div key={player.id}>{player.name}  {player.points}</div>)}
 			</div>
 		)

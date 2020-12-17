@@ -50,6 +50,7 @@ var playerOrderInfo
 var yourHandList = []  
 var yourHand
 var self
+var last2ClickedCards = []
 
 socket.on('playerid', function(id){	
 	playerid = id
@@ -152,9 +153,17 @@ function create ()
 		
 		yourHandList.push(data.card)
 
-		var card = this.add.sprite(30 * data.count + 50, 200, data.card).setScale(0.5, 0.5).setName(data.card).setInteractive()
+		var card = this.add.sprite(400, 200, data.card).setScale(0.5, 0.5).setName(data.card).setInteractive()
+		card.setData('card', 'flip')
 
-		yourHand.push(card)
+		var newCard 
+		setTimeout(()=> {
+			card.destroy()
+			newCard = this.add.sprite(30 * data.count + 50, 600, data.card).setScale(0.5, 0.5).setName(data.card).setInteractive()
+			newCard.setData('card', 'inHand')
+			yourHand.push(newCard)
+		}, 1500)
+			
         // yourHand.add(card)
         // console.log(yourHandList)
         // card.on('pointerdown', function(pointer, localX, localY, event) {
@@ -193,7 +202,7 @@ function create ()
 
 		}
 		// need to check if it's a card b/c will also trigger for clicked text
-	    if(gameObject.type == "Sprite") {
+	    if(gameObject.type == "Sprite" && gameObject.getData('card') == 'inHand') {
 	    	gameObject.setTint(0xff0000)
 		    var cardClicked = gameObject.texture.key
 		    console.log(gameObject)
@@ -202,6 +211,13 @@ function create ()
 		    	gameObject.y = gameObject.y - 20
 		    	dropZoneCards.push(gameObject.texture.key)
 		    	dropZoneCardsSprites.push(gameObject)	
+
+
+		    	// track for liang purposes - remove first added one, add just clicked
+		    	if (last2ClickedCards.length == 2) {
+		    		last2ClickedCards.pop() 
+		    	}
+		    	last2ClickedCards.unshift(gameObject.texture.key)
 		    	// console.log(dropZoneCardsSprites)
 		    } else {
 		    	// remove and move it back down 
@@ -212,6 +228,11 @@ function create ()
 		    	// console.log(dropZoneCardsSprites)
 		    }	   
 		    
+	    }
+
+	    if (gameObject.getData('card') == 'flip') {
+	    	socket.emit('liang', {card: gameObject.texture.key, id: playerid})
+
 	    }
 	    
 	    console.log(gameObject.texture.key)
@@ -302,6 +323,14 @@ function create ()
 		cardsPlayed.forEach((card)=> card.destroy())
 		cardsPlayed = []
 	})
+
+	socket.on('zhuLiangLe', (data)=> {
+		console.log(data)
+	})
+
+	socket.on('fail', (data) => {
+		console.log(data)
+	})
 }
 
 function playHand() {
@@ -356,6 +385,11 @@ function sortHand(cards, currentCardObj, zhuSuit) {
 
 	// how do i update yourHandList mid deal w/o missing a card??? --should prob sort server side?? 
 	
+}
+
+function liang() {
+
+	socket.emit('liang', {'card': last2ClickedCards, id: playerid})
 }
 // function setName() {
 // 	var name = document.getElementById('name').value
