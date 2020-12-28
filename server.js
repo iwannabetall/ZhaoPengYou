@@ -22,7 +22,7 @@ app.get('/', function(req, res){
 let players = [];
 var playerInfo = [];
 
-var gameHistory = [] //array of round History
+var gameHistory = [] // array of round History
 var roundHistory = {} // contains cardHisotry, points scored and by whom 
 var cardHistory = [] // cards played in a round by each player, embedded in roundHistory
 var pointsInRound = 0 // points played in a round 
@@ -31,8 +31,23 @@ var roundWinner // who won the round, either points or team
 var scoreBoardData = [] // what points and levels each player has.  should track who was zhuang in each game and what the teams were 
 var liangData
 var startingLevel = 2 
+var gameStarted = false  // 
 
 var cardDeck = ["zace_of_diamonds", "2_of_diamonds", "3_of_diamonds", "4_of_diamonds", "5_of_diamonds", "6_of_diamonds", "7_of_diamonds", "8_of_diamonds", "90_of_diamonds", "910_of_diamonds", "jack_of_diamonds", "queen_of_diamonds", "rking_of_diamonds", "zace_of_spades", "2_of_spades", "3_of_spades", "4_of_spades", "5_of_spades", "6_of_spades", "7_of_spades", "8_of_spades", "90_of_spades", "910_of_spades", "jack_of_spades", "queen_of_spades", "rking_of_spades", "zace_of_clubs", "2_of_clubs", "3_of_clubs", "4_of_clubs", "5_of_clubs", "6_of_clubs", "7_of_clubs", "8_of_clubs", "90_of_clubs", "910_of_clubs", "jack_of_clubs", "queen_of_clubs", "rking_of_clubs", "zace_of_hearts", "2_of_hearts", "3_of_hearts", "4_of_hearts", "5_of_hearts", "6_of_hearts", "7_of_hearts", "8_of_hearts", "90_of_hearts", "910_of_hearts", "jack_of_hearts", "queen_of_hearts", "rking_of_hearts", 'red_joker', 'black_joker']
+
+function generateDecks(decksNeeded) {
+	var fullCardDeck = []	
+	for (var j = 0; j < decksNeeded; j++){
+		var newDeck = []
+		for(var i = 0; i<cardDeck.length; i++){    	
+			var newCard = {card: cardDeck[i], deck: j}    				
+			newDeck.push(newCard)
+		}
+		fullCardDeck = fullCardDeck.concat(newDeck)
+	}
+
+	return fullCardDeck
+}
 
 function shuffle(array) {
     // Fisher-Yates (aka Knuth) Shuffle
@@ -88,10 +103,17 @@ io.on('connection', function (socket) {
     	
     	for (var i = 0; i < players.length; i++) {
     		io.to(players[i]).emit('startGame', {order: i, players: players, playerInfo: playerInfo})  	
+    	}
+
+    	// if (players.length > 7)
+    	if (true) {
+    		// generate 2 decks 
+    		var allCards = generateDecks(2)
+    		
     	}    	
-	
-        var shuffledCards = shuffle(cardDeck)
-        // console.log(shuffledCards)
+		
+        var shuffledCards = shuffle(allCards)
+        console.log(shuffledCards)
         var cardInd = 0
         var kouDi = 8  // number of cards at bottom 
     	var cardCount = 0
@@ -100,34 +122,38 @@ io.on('connection', function (socket) {
         var kouDi = 8  // number of cards at bottom 
         var cardCount = 0
         
-		// while (cardInd < shuffledCards.length - kouDi) {
-		// 	if (cardInd % players.length == 0) {
-		// 		cardCount = cardCount + 1
-		// 	}
-		// 	var whichPlayer = cardInd % players.length			
-		// 	io.to(players[whichPlayer]).emit('deal', {card: shuffledCards[cardInd], count: cardCount});
-		// 	cardInd = cardInd + 1
-		// }
-        var dealer = setInterval(function() {
+		while (cardInd < shuffledCards.length - kouDi) {
+			if (cardInd % players.length == 0) {
+				cardCount = cardCount + 1
+			}
+			var whichPlayer = cardInd % players.length			
+			io.to(players[whichPlayer]).emit('deal', {card: shuffledCards[cardInd].card, deck:  shuffledCards[cardInd].deck, count: cardCount});
+			cardInd = cardInd + 1
+		}
+   //      var dealer = setInterval(function() {
         	
-        	console.log(cardInd, cardCount)
-        	// console.log('wtf', players, shuffledCards)
-        	if (cardInd < shuffledCards.length - kouDi){
-        		if (cardInd % players.length == 0) {
-					cardCount = cardCount + 1
-				}
-				var whichPlayer = cardInd % players.length
-				io.to(players[whichPlayer]).emit('deal', {card: shuffledCards[cardInd], count: cardCount});
-				cardInd = cardInd + 1	
-        	} else {
-        		console.log('stop dealing')
-        		clearInterval(dealer)
-        	}
+   //      	console.log(cardInd, cardCount)
+   //      	// console.log('wtf', players, shuffledCards)
+   //      	if (cardInd < shuffledCards.length - kouDi){
+   //      		if (cardInd % players.length == 0) {
+			// 		cardCount = cardCount + 1
+			// 	}
+			// 	var whichPlayer = cardInd % players.length
+			// 	io.to(players[whichPlayer]).emit('deal', {card: shuffledCards[cardInd], count: cardCount});
+			// 	cardInd = cardInd + 1	
+   //      	} else {
+   //      		console.log('stop dealing')        		
+   //      		clearInterval(dealer)
+   //      	}
         	
-			// console.log(`deal ${shuffledCards[cardInd]}`)
-        }, 1000)
+			// // console.log(`deal ${shuffledCards[cardInd]}`)
+   //      }, 1000)
    		
 	});
+
+	socket.on('start game', function(){
+		io.emit('gameStarted', true)
+	})
 
     socket.on('round winner', function(data){
     	// record who won the round 
@@ -209,15 +235,17 @@ io.on('connection', function (socket) {
 
     socket.on('liang', function(data) {
     	// TODO NEED TO DEAL WITH 3 DECK AND GET ALL 3 ZHU 
-
+    	console.log('liang', data)
+    	console.log('liangData', liangData)
     	// check if card already flipped 
     	if (liangData.flippedBy == null && data.card.length == 1) {
+    		console.log('first zhu', data.card.includes(startingLevel))
     		// if nobody flipped yet, 
-    		if (data.card.includes(startingLevel)){
+    		if (data.card[0].includes(startingLevel)){
 				//TODO need to make sure they haven't already flipped this one ie click same card twice 
-				console.log('zhu flipped')
+				
 		    	liangData.numberFlipped = liangData.numberFlipped + 1
-
+		    	liangData.name = data.name
 		    	liangData.flippedBy = data.id  // need to announce who flipped it 
 
 		    	var suits = ['diamonds', 'spades', 'clubs', 'hearts'];
@@ -227,8 +255,9 @@ io.on('connection', function (socket) {
 		    		}
 		    	}
 		    	
-		    	liangData.zhuCard = data.card
-
+		    	liangData.zhuCard = data.card[0]
+		    	console.log('zhu flipped', liangData)
+		    	io.emit('zhuLiangLe', {liangData: liangData})
     		}
 
     	}
@@ -242,12 +271,17 @@ io.on('connection', function (socket) {
     		var isZhu2 = data.card[1].includes(startingLevel)
     		
     		if (suit1 == suit2 && isZhu1 && isZhu2 && liangData.numberFlipped < 2) {
+    			// need to check that hte person isnt flipping their own flipped zhu 
+
+    			// flipped a pair and other person hasnt ding 
     			liangData.numberFlipped = 2
     			liangData.zhuCard = data.card[0]
 	    		liangData.suit = suit1
 	    		liangData.flippedBy = data.id 
-	    			
-    		} if (isZhu1 && !liangData.zhuCard) {
+	    		liangData.name = data.name	
+	    		io.emit('zhuLiangLe', {liangData: liangData})
+
+    		} else if (isZhu1 && !liangData.zhuCard) {
     			// if either is zhu and havent set a zhu
 	    			// index 0 = most recently clicked card
     			liangData.numberFlipped = liangData.numberFlipped + 1
@@ -256,7 +290,8 @@ io.on('connection', function (socket) {
 	    		liangData.zhuCard = data.card[0]
 	    		liangData.suit = suit1
 	    		liangData.flippedBy = data.id 
-	
+	    		liangData.name = data.name
+				io.emit('zhuLiangLe', {liangData: liangData})
     		} else if (isZhu2 && !liangData.zhuCard) {
     			// if either is zhu and havent set a zhu
 	    			// index 0 = most recently clicked card
@@ -265,18 +300,18 @@ io.on('connection', function (socket) {
 	    		// if suits don't match, make it the most recent one -- ie pop 		
 	    		liangData.zhuCard = data.card[1]
 	    		liangData.suit = suit2
-	    		liangData.flippedBy = data.id 
-	
+	    		liangData.flippedBy = data.id
+	    		liangData.name = data.name 
+				io.emit('zhuLiangLe', {liangData: liangData})
     		} else {
 			// reject message ie invalid card
 				io.emit('fail', {msg: 'what are you doing??'})
 			}
     		
+    		
     	}
 
-    	console.log(liangData)
-
-    	io.emit('zhuLiangLe', {liangData: liangData})
+    	console.log(liangData)    	
     	// need to check that nobody else has flipped and that it's the right level
 
     })

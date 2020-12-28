@@ -32,7 +32,7 @@ function preload ()
 			}
 		}
 
-		var avatars = ['charmander_sm', 'squirtle', 'pikachu_sm', 'snorlax']
+		var avatars = ['charmander_sm', 'squirtle', 'pikachu_sm', 'snorlax', 'psyduck']
 
 		for (var i = 0; i<avatars.length;i++) {
 			this.load.image(avatars[i], `svgs/avatars/${avatars[i]}.jpg`)
@@ -43,6 +43,7 @@ function preload ()
 var dropZoneCards = []  // svg names of cards played 
 var dropZoneCardsSprites = []  // game objs of cards played
 var cardsPlayed = []
+var liangCards = []
 var playerid 
 var seatOrder
 var playerOrder
@@ -51,6 +52,8 @@ var yourHandList = []
 var yourHand
 var self
 var last2ClickedCards = []
+var gameStarted = false  // 
+var zhuangJia // if not set, ask if theyre ok with X as it 
 
 socket.on('playerid', function(id){	
 	playerid = id
@@ -59,8 +62,9 @@ socket.on('playerid', function(id){
 function create ()
     {
 
-	var avatars = ['charmander_sm', 'squirtle', 'pikachu_sm', 'snorlax']
-	var avatarGroup = this.add.group()
+	var avatars = ['charmander_sm', 'squirtle', 'pikachu_sm', 'snorlax', 'psyduck']
+	var avatarGroup = this.add.group()  // need groups as global vars 
+	var liangGroup = this.add.group()
 
 	for (var i = 0; i < avatars.length; i++) {
 		var seatPlacement = this.add.image(100 + i * 170,100, avatars[i]).setInteractive()
@@ -77,6 +81,7 @@ function create ()
 
     // make sure to use arrow function for call back or "this" gets wrong reference 
 	socket.on('startGame', (data) => {
+		
 		console.log(data)
 		// playerid = data.id 
 		seatOrder = data.order
@@ -159,7 +164,7 @@ function create ()
 		var newCard 
 		setTimeout(()=> {
 			card.destroy()
-			newCard = this.add.sprite(30 * data.count + 50, 600, data.card).setScale(0.5, 0.5).setName(data.card).setInteractive()
+			newCard = this.add.sprite(30 * data.count + 50, 600, data.card).setScale(0.5, 0.5).setName(`${data.card}${data.deck}`).setInteractive()
 			newCard.setData('card', 'inHand')
 			yourHand.push(newCard)
 		}, 1500)
@@ -204,12 +209,12 @@ function create ()
 		// need to check if it's a card b/c will also trigger for clicked text
 	    if(gameObject.type == "Sprite" && gameObject.getData('card') == 'inHand') {
 	    	gameObject.setTint(0xff0000)
-		    var cardClicked = gameObject.texture.key
+		    var cardClicked = gameObject.name
 		    console.log(gameObject)
 		    if (!dropZoneCards.includes(cardClicked)) {
 		    	// if haven't selected this card yet, move it up, add to selected list 
 		    	gameObject.y = gameObject.y - 20
-		    	dropZoneCards.push(gameObject.texture.key)
+		    	dropZoneCards.push(gameObject.name)
 		    	dropZoneCardsSprites.push(gameObject)	
 
 
@@ -217,7 +222,7 @@ function create ()
 		    	if (last2ClickedCards.length == 2) {
 		    		last2ClickedCards.pop() 
 		    	}
-		    	last2ClickedCards.unshift(gameObject.texture.key)
+		    	last2ClickedCards.unshift(gameObject.texture.key)  // just need to know the card, not which deck 
 		    	// console.log(dropZoneCardsSprites)
 		    } else {
 		    	// remove and move it back down 
@@ -231,7 +236,8 @@ function create ()
 	    }
 
 	    if (gameObject.getData('card') == 'flip') {
-	    	socket.emit('liang', {card: gameObject.texture.key, id: playerid})
+	    	var clicker = getPlayerById()
+	    	socket.emit('liang', {card: [gameObject.texture.key], id: playerid, name: clicker})
 
 	    }
 	    
@@ -325,10 +331,25 @@ function create ()
 	})
 
 	socket.on('zhuLiangLe', (data)=> {
-		console.log(data)
+		if (liangGroup.children.entries.length > 0) {
+			liangGroup.clear(true, true)
+		}
+
+		var gameInfo = data.liangData 
+		var zhu = this.add.sprite(50, 100, gameInfo.zhuCard).setScale(0.3, 0.3).setName(`Zhu${gameInfo.zhuCard}`)
+		liangGroup.add(zhu)
+		var zhulabel = this.add.text(50, 20, `Zhu flipped by ${gameInfo.name}`)
+		liangGroup.add(zhulabel)
+		console.log(liangGroup.length)
+		console.log(liangGroup.children.entries.length)
+		console.log(liangGroup.getLength())
 	})
 
 	socket.on('fail', (data) => {
+		console.log(data)
+	})
+
+	socket.on('gameStarted', (data)=> {
 		console.log(data)
 	})
 }
@@ -387,11 +408,27 @@ function sortHand(cards, currentCardObj, zhuSuit) {
 	
 }
 
-function liang() {
+function getPlayerById(){
+	var ids = playerOrderInfo.map(x=>x.id)
+	var names = playerOrderInfo.map(x=>x.name) 
+	var ind = ids.indexOf(playerid)
+	var clicker = names[ind]
+	return clicker
+}
 
-	socket.emit('liang', {'card': last2ClickedCards, id: playerid})
+function liang() {
+	var clicker = getPlayerById()
+	socket.emit('liang', {'card': last2ClickedCards, id: playerid, name: clicker})
 }
 // function setName() {
 // 	var name = document.getElementById('name').value
 // 	socket.emit('set name', {name: name, id: playerid })
 // }
+
+function startGame(){
+
+	liangGroup.clear(true, true)
+	// liangGroup.forEach((liang)=> liang.destroy())	
+	socket.emit('start game')
+}
+
