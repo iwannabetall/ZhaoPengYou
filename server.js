@@ -19,17 +19,21 @@ app.get('/', function(req, res){
     res.render('/public/index.html');
 });
 
-let players = [];
+let players = [];  // player ids 
 var playerInfo = [];
 
 var gameHistory = [] // array of round History
 var roundHistory = {} // contains cardHisotry, points scored and by whom 
 var cardHistory = [] // cards played in a round by each player, embedded in roundHistory
-var pointsInRound = 0 // points played in a round 
+var pointsInRound = 0 // points played in a ro`und 
 var votes = 0 
 var roundWinner // who won the round, either points or team
 var scoreBoardData = [] // what points and levels each player has.  should track who was zhuang in each game and what the teams were 
+var confirmZhuang = [] // track who has confirmed zhuangjia -- needs to match all players??? whati f there's an issue with the server tracking who's connected? or should i just do all player names? what if there's duplicate names? 
 var liangData
+var firstLiang = {}  // keep track of who flips zhu first case they get flipped and need to set priority 
+firstLiang.name = null
+
 var startingLevel = 2 
 var gameStarted = false  // 
 
@@ -100,9 +104,11 @@ io.on('connection', function (socket) {
 		liangData = {}
 		liangData.numberFlipped = 0
 		liangData.flippedBy = null 
+		confirmZhuang = []
     	
     	for (var i = 0; i < players.length; i++) {
-    		io.to(players[i]).emit('startGame', {order: i, players: players, playerInfo: playerInfo})  	
+    		playerInfo[i].zhuang = false
+    		io.to(players[i]).emit('startGame', {order: i, players: players, playerInfo: playerInfo})  
     	}
 
     	// if (players.length > 7)
@@ -113,7 +119,7 @@ io.on('connection', function (socket) {
     	}    	
 		
         var shuffledCards = shuffle(allCards)
-        console.log(shuffledCards)
+        // console.log(shuffledCards)
         var cardInd = 0
         var kouDi = 8  // number of cards at bottom 
     	var cardCount = 0
@@ -153,6 +159,23 @@ io.on('connection', function (socket) {
 
 	socket.on('start game', function(){
 		io.emit('gameStarted', true)
+	})
+
+	socket.on('confirm zhuang', function(data){
+		console.log('confirm zhuang', data)
+		var order = players.indexOf(data.zhuang.id)
+		if (data.response == false){
+			// if one person rejects, send message to all players telling them that X is saying wait 
+			io.emit('zhuang rejected', {waitingOn: data.responseByPlayer})
+		} else {
+			confirmZhuang.push(data.responseByPlayer)
+			if (confirmZhuang.length == players.length){
+				playerInfo[order].zhuang = true 
+				io.emit('zhuang confirmed', {playerInfo: playerInfo, zhuang: data.zhuang})		
+			}
+			
+		}
+		
 	})
 
     socket.on('round winner', function(data){
@@ -228,9 +251,14 @@ io.on('connection', function (socket) {
     })
 
     socket.on('avatar', function(data){
-    	console.log(data)
+    	// console.log(data)
     	var order = players.indexOf(data.id)
     	playerInfo[order].avatar = data.avatar    	
+    })
+
+    socket.on('set zhuang', function(data) {
+    	// console.log('set zhuang', data)
+    	io.emit('check zhuang', data)
     })
 
     socket.on('liang', function(data) {
@@ -251,10 +279,15 @@ io.on('connection', function (socket) {
 		    	var suits = ['diamonds', 'spades', 'clubs', 'hearts'];
 		    	for (var i = 0; i < suits.length; i++) {
 		    		if (data.card.includes(suits[i])){
-		    			liangData.suit = suits[i]
+		    			liangData.suit = suits[i]		    			
 		    		}
 		    	}
 		    	
+		    	if (firstLiang.name == null) {
+    				firstLiang.card = data.card[0]
+		    		firstLiang.name = data.id
+		    	}
+
 		    	liangData.zhuCard = data.card[0]
 		    	console.log('zhu flipped', liangData)
 		    	io.emit('zhuLiangLe', {liangData: liangData})
@@ -279,6 +312,10 @@ io.on('connection', function (socket) {
 	    		liangData.suit = suit1
 	    		liangData.flippedBy = data.id 
 	    		liangData.name = data.name	
+	    		if (firstLiang.name == null) {
+    				firstLiang.card = data.card[0]
+		    		firstLiang.name = data.id
+		    	}
 	    		io.emit('zhuLiangLe', {liangData: liangData})
 
     		} else if (isZhu1 && !liangData.zhuCard) {
@@ -291,6 +328,10 @@ io.on('connection', function (socket) {
 	    		liangData.suit = suit1
 	    		liangData.flippedBy = data.id 
 	    		liangData.name = data.name
+	    		if (firstLiang.name == null) {
+    				firstLiang.card = data.card[0]
+		    		firstLiang.name = data.id
+		    	}
 				io.emit('zhuLiangLe', {liangData: liangData})
     		} else if (isZhu2 && !liangData.zhuCard) {
     			// if either is zhu and havent set a zhu
@@ -302,6 +343,11 @@ io.on('connection', function (socket) {
 	    		liangData.suit = suit2
 	    		liangData.flippedBy = data.id
 	    		liangData.name = data.name 
+
+	    		if (firstLiang.name == null) {
+    				firstLiang.card = data.card[1]
+		    		firstLiang.name = data.id
+		    	}
 				io.emit('zhuLiangLe', {liangData: liangData})
     		} else {
 			// reject message ie invalid card

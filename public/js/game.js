@@ -40,7 +40,8 @@ function preload ()
 
 }
 
-var dropZoneCards = []  // svg names of cards played 
+var dropZoneCardsTracker = []  // svg names of cards played -- tracks unique cards ie from which deck 
+// should dropZoneCardsTracker be an array of objects???!
 var dropZoneCardsSprites = []  // game objs of cards played
 var cardsPlayed = []
 var liangCards = []
@@ -48,12 +49,15 @@ var playerid
 var seatOrder
 var playerOrder
 var playerOrderInfo 
+var playerInfo  // needs to always be synced with server 
 var yourHandList = []  
 var yourHand
 var self
 var last2ClickedCards = []
 var gameStarted = false  // 
 var zhuangJia // if not set, ask if theyre ok with X as it 
+var currentZhuang
+var currentZhuangId
 
 socket.on('playerid', function(id){	
 	playerid = id
@@ -87,7 +91,7 @@ function create ()
 		seatOrder = data.order
 		var players = data.players
 		var playerList = data.players
-		var playerInfo = data.playerInfo
+		playerInfo = data.playerInfo
 
 		console.log(playerInfo)
 		
@@ -146,7 +150,7 @@ function create ()
 	})
 
     // create group for hand played and round of hands played -- game is undefined??
-    // var dropZoneCardsGroup = game.add.group()  // what cards were played in drop zone 
+    // var dropZoneCardsTrackerGroup = game.add.group()  // what cards were played in drop zone 
     // var cardRound = game.add.group()
 
 	// var cardsOnTable = this.add.group()
@@ -154,7 +158,7 @@ function create ()
 	yourHand = []
 	
     socket.on('deal', (data)=> {
-		console.log(data.card)
+		// console.log(data.card)
 		
 		yourHandList.push(data.card)
 
@@ -211,10 +215,10 @@ function create ()
 	    	gameObject.setTint(0xff0000)
 		    var cardClicked = gameObject.name
 		    console.log(gameObject)
-		    if (!dropZoneCards.includes(cardClicked)) {
+		    if (!dropZoneCardsTracker.includes(cardClicked)) {
 		    	// if haven't selected this card yet, move it up, add to selected list 
 		    	gameObject.y = gameObject.y - 20
-		    	dropZoneCards.push(gameObject.name)
+		    	dropZoneCardsTracker.push(gameObject.name)
 		    	dropZoneCardsSprites.push(gameObject)	
 
 
@@ -227,8 +231,8 @@ function create ()
 		    } else {
 		    	// remove and move it back down 
 		    	gameObject.y = gameObject.y + 20
-		    	var cardIndex = dropZoneCards.indexOf(cardClicked)	    	
-		    	dropZoneCards = dropZoneCards.filter(x=> x != cardClicked)
+		    	var cardIndex = dropZoneCardsTracker.indexOf(cardClicked)	    	
+		    	dropZoneCardsTracker = dropZoneCardsTracker.filter(x=> x != cardClicked)
 		    	dropZoneCardsSprites.splice(cardIndex, 1)  // remove gameobject from array
 		    	// console.log(dropZoneCardsSprites)
 		    }	   
@@ -285,9 +289,9 @@ function create ()
 	// 	console.log(dropZone.data)
 
 	//     dropZone.data.values.cards++;
-	//     dropZoneCards.push(gameObject.texture.key)
+	//     dropZoneCardsTracker.push(gameObject.texture.key)
 	//     dropZoneCardsSprites.push(gameObject)
-	//     console.log(dropZoneCards)
+	//     console.log(dropZoneCardsTracker)
 
 	//     gameObject.x = (dropZone.x - 350) + (dropZone.data.values.cards * 50);
 	//     gameObject.y = dropZone.y;	
@@ -334,15 +338,17 @@ function create ()
 		if (liangGroup.children.entries.length > 0) {
 			liangGroup.clear(true, true)
 		}
-
+		console.log(data)
 		var gameInfo = data.liangData 
+		currentZhuangId = gameInfo.flippedBy
+		currentZhuang = gameInfo.name
 		var zhu = this.add.sprite(50, 100, gameInfo.zhuCard).setScale(0.3, 0.3).setName(`Zhu${gameInfo.zhuCard}`)
 		liangGroup.add(zhu)
 		var zhulabel = this.add.text(50, 20, `Zhu flipped by ${gameInfo.name}`)
 		liangGroup.add(zhulabel)
-		console.log(liangGroup.length)
-		console.log(liangGroup.children.entries.length)
-		console.log(liangGroup.getLength())
+		// console.log(liangGroup.length)
+		// console.log(liangGroup.children.entries.length)
+		// console.log(liangGroup.getLength())
 	})
 
 	socket.on('fail', (data) => {
@@ -355,11 +361,12 @@ function create ()
 }
 
 function playHand() {
+	console.log(dropZoneCardsTracker)
 	console.log(dropZoneCardsSprites)
 	dropZoneCardsSprites.forEach((card)=> card.destroy())
 	// tell server what we're playing to tell everybody else
-	socket.emit("playHand", {cards: dropZoneCards, player: playerid});
-	dropZoneCards = []
+	socket.emit("playHand", {cards: dropZoneCardsTracker, player: playerid});
+	dropZoneCardsTracker = []
 }
 
 function clearTable() {
@@ -432,3 +439,8 @@ function startGame(){
 	socket.emit('start game')
 }
 
+function setZhuang() {	
+	console.log(currentZhuangId, currentZhuang)
+	// allows zhuang to kou di 
+	socket.emit('set zhuang', {id: currentZhuangId, name: currentZhuang})
+}
