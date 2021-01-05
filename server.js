@@ -178,6 +178,11 @@ io.on('connection', function (socket) {
 		
 	})
 
+	socket.on('call friends', function(data) {
+		console.log(data)
+		io.emit('jiao', data)
+	})
+
     socket.on('round winner', function(data){
     	// record who won the round 
     	roundHistory.winner = data.id

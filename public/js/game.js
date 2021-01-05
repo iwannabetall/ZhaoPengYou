@@ -41,7 +41,8 @@ function preload ()
 }
 
 var dropZoneCardsTracker = []  // svg names of cards played -- tracks unique cards ie from which deck 
-// should dropZoneCardsTracker be an array of objects???!
+// should dropZoneCardsTracker be an array of objects???!  going to make it 2 sep arrays b/c it's easier to filter 
+var dropZoneCards = [] 
 var dropZoneCardsSprites = []  // game objs of cards played
 var cardsPlayed = []
 var liangCards = []
@@ -53,7 +54,7 @@ var playerInfo  // needs to always be synced with server
 var yourHandList = []  
 var yourHand
 var self
-var last2ClickedCards = []
+var last2ClickedCards = []  // for liang zhu but should really be 3 -- also make sure if clicked 2 zhu, that the most recent one is going to be flipped / make it obvious that 
 var gameStarted = false  // 
 var zhuangJia // if not set, ask if theyre ok with X as it 
 var currentZhuang
@@ -213,11 +214,13 @@ function create ()
 		// need to check if it's a card b/c will also trigger for clicked text
 	    if(gameObject.type == "Sprite" && gameObject.getData('card') == 'inHand') {
 	    	gameObject.setTint(0xff0000)
-		    var cardClicked = gameObject.name
+		    var cardClicked = gameObject.name  // unique id ie 2 of hearts from deck 1
+		    var cardVal = gameObject.texture.key  // ie 2 of hearts 
 		    console.log(gameObject)
 		    if (!dropZoneCardsTracker.includes(cardClicked)) {
 		    	// if haven't selected this card yet, move it up, add to selected list 
 		    	gameObject.y = gameObject.y - 20
+		    	dropZoneCards.push(cardVal)
 		    	dropZoneCardsTracker.push(gameObject.name)
 		    	dropZoneCardsSprites.push(gameObject)	
 
@@ -233,6 +236,10 @@ function create ()
 		    	gameObject.y = gameObject.y + 20
 		    	var cardIndex = dropZoneCardsTracker.indexOf(cardClicked)	    	
 		    	dropZoneCardsTracker = dropZoneCardsTracker.filter(x=> x != cardClicked)
+
+		    	var removeCardInd = dropZoneCards.indexOf(cardVal)
+		    	dropZoneCards.splice(removeCardInd, 1)
+
 		    	dropZoneCardsSprites.splice(cardIndex, 1)  // remove gameobject from array
 		    	// console.log(dropZoneCardsSprites)
 		    }	   
@@ -351,7 +358,13 @@ function create ()
 		// console.log(liangGroup.getLength())
 	})
 
+	socket.on('jiao', (data) => {
+		// DO I NEED TO DISPLAY IT??		
+		console.log(data)
+	})
+
 	socket.on('fail', (data) => {
+		// failed liang attempt 
 		console.log(data)
 	})
 
@@ -361,12 +374,13 @@ function create ()
 }
 
 function playHand() {
-	console.log(dropZoneCardsTracker)
-	console.log(dropZoneCardsSprites)
+	// console.log(dropZoneCardsTracker)
+	// console.log(dropZoneCardsSprites)
 	dropZoneCardsSprites.forEach((card)=> card.destroy())
 	// tell server what we're playing to tell everybody else
-	socket.emit("playHand", {cards: dropZoneCardsTracker, player: playerid});
+	socket.emit("playHand", {cards: dropZoneCards, player: playerid});
 	dropZoneCardsTracker = []
+	dropZoneCards = []
 }
 
 function clearTable() {

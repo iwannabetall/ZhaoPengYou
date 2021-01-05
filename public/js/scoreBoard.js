@@ -1,7 +1,21 @@
+var suits = ['diamonds', 'spades', 'clubs', 'hearts'];
+
+var valKey = [{key:'zace', val: 'Ace'}, {key:'rking', val: 'King'}, {key:'910', val: '10'}, {key:'queen', val: 'Queen'}, {key:'jack', val: 'Jack'}, {key:'90', val: '9'}, {key:'8', val: '8'}, {key:'7', val: '7'}, {key:'6', val: '6'}, {key:'5', val: '5'}, {key:'4', val: '4'}, {key:'3', val: '3'}, {key:'2', val: '2'}]
+
+var conditions = [{val: "First", key: 'first'}, {val: "Second", key: '2nd'}, {val: "Outside first", key: 'outside_first'}, {val: "Dead", key: 'dead'}, {val: "Third", key: 'third'}]
+
 class Scoreboard extends React.Component {
 	constructor(props) {
 		super(props)
 		this.setName = this.setName.bind(this)
+		this.submitFriends = this.submitFriends.bind(this)
+		this.selectSuit1 = this.selectSuit1.bind(this)
+		this.selectSuit2 = this.selectSuit2.bind(this)
+		this.selectVal1 = this.selectVal1.bind(this)
+		this.selectVal2 = this.selectVal2.bind(this)
+		this.selectFriendCondition1 = this.selectFriendCondition1.bind(this)
+		this.selectFriendCondition2 = this.selectFriendCondition2.bind(this)
+
 		this.state = {
 			playerInfo: null,
 			name: '',
@@ -10,10 +24,62 @@ class Scoreboard extends React.Component {
 			scoreBoard: null,
 			level: 2,
 			zhuSuit: null,
-			zhuangJiaInfo: null, 			
+			zhuangJiaInfo: null,  // obj with name and id attributes
 			confirmZhuangJia: false,
-			amIZhuangJia: false
+			amIZhuangJia: false, 
+			suit1Ask: suits[0], // what card did the zhuang jia ask for  
+			suit2Ask: suits[0],
+			val1Ask: valKey[0].val,  // THESE ARE FIXED.  feel like there should be a better way 
+			val2Ask: valKey[0].val,
+			friendCondition1: conditions[0].val,
+			friendCondition2: conditions[0].val,
+			findFriend1: null, // eg ace of spades
+			findFriend2: null
 		}
+	}
+
+	submitFriends () {		
+		// console.log(this.state.suit1Ask, this.state.val1Ask, this.state.friendCondition1, this.state.suit2Ask, this.state.val2Ask, this.state.friendCondition2)
+		// tell server to broadcast which cards were called for 
+	    event.preventDefault();	    
+		socket.emit('call friends', {firstAsk: `${this.state.val1Ask} of ${this.state.suit1Ask}`, condition1: this.state.friendCondition1, secondAsk: `${this.state.val2Ask} of ${this.state.suit2Ask}`, condition2: this.state.friendCondition2})
+
+	}
+
+	selectSuit1 (e){
+		this.setState({
+			suit1Ask: e.target.value
+		})
+	}
+
+	selectSuit2 (e){
+		this.setState({
+			suit2Ask: e.target.value 
+		})
+	}
+
+	selectVal1 (e){
+		this.setState({
+			val1Ask: e.target.value 
+		})
+	}
+
+	selectVal2 (e){
+		this.setState({
+			val2Ask: e.target.value
+		})
+	}
+
+	selectFriendCondition1 (e) {
+		this.setState({
+			friendCondition1: e.target.value
+		})
+	}
+
+	selectFriendCondition2 (e) {
+		this.setState({
+			friendCondition2: e.target.value
+		})
 	}
 
 	setName() {
@@ -92,22 +158,77 @@ class Scoreboard extends React.Component {
     	socket.on('zhuang rejected', (data)=> {
     		console.log('zhuang rejected', data)
     	})
+
+    	socket.on('jiao', (data)=> {
+    		// console.log(data)
+    		this.setState({
+    			findFriend1: `${data.condition1} ${data.firstAsk}`, 
+    			findFriend2: `${data.condition2} ${data.secondAsk}`, 
+    		})
+    	})
+
 	}
 
 	// {this.state.playerInfo && <PlayerOrder players={this.state.playerInfo}/>}
 	render() {
-		return (			
+		return (
 			<div>
 				{this.state.confirmZhuangJia && <div> 
 						<Modal zhuangJia={this.state.zhuangJiaInfo.name} reject={() => this.rejectZhuang()} accept={() => this.acceptZhuang()}/>						
 					</div>}
-					{this.state.amIZhuangJia && <div>I am ZhuangJia</div>}
+				{this.state.amIZhuangJia && this.state.findFriend1 == null && <CallFriends selectVal1={(e) => this.selectVal1(e)} selectVal2={(e) => this.selectVal2(e)} selectSuit1={(e) => this.selectSuit1(e)} selectSuit2={(e) => this.selectSuit2(e)} selectFriendCondition1={(e) => this.selectFriendCondition1(e)} selectFriendCondition2={(e) => this.selectFriendCondition2(e)} suit1Ask={this.state.suit1Ask} suit2Ask={this.state.suit2Ask} val1Ask={this.state.val1Ask} val2Ask={this.state.val2Ask} friendCondition1={this.state.friendCondition1} friendCondition2={this.state.friendCondition2} submitFriends={() => this.submitFriends()}/>}
+				{this.state.findFriend1 != null && <Billboard zhuangJia={this.state.zhuangJiaInfo.name} findFriend1={this.state.findFriend1} findFriend2={this.state.findFriend2} />}
 				{this.state.name == '' && <PlayerName setName={() => this.setName()} name={this.state.name}/>}
 				{this.state.scoreBoard && <Rankings score={this.state.scoreBoard} level={this.state.level}/>}				
 			</div>
 			)
 	}
 
+}
+
+function Billboard(props) {
+	return (
+		<h3> {props.zhuangJia} is calling for the {props.findFriend1} and {props.findFriend2}
+		</h3>)
+}
+
+function CallFriends (props) {
+	// select which cards will be your friends	
+
+	return (<div className = 'callFriends'>
+				<h2>Call Your Friends</h2>
+				<div>
+					<form onSubmit={props.submitFriends}>
+						<div className = 'friends'>
+							<select value={props.suit1Ask} onChange={props.selectSuit1}> 
+								{suits.map(suit=> <option key={`${suit}1`} value={suit}> {suit} </option>)}
+							</select>
+							<select value={props.val1Ask} onChange={props.selectVal1}> 
+								{valKey.map(card=> <option key={`${card.key}1`} value={card.val}> {card.val} </option>)}
+							</select>
+
+							<select value={props.friendCondition1} onChange={props.selectFriendCondition1}> 
+								{conditions.map(condition=> <option key={`${condition.key}1`} value={condition.val}> {condition.val} </option>)}
+							</select>
+
+						</div>
+						<div className = 'friends'>
+							<select value={props.suit2Ask} onChange={props.selectSuit2}> 
+								{suits.map(suit=> <option  key={`${suit}2`} value={suit}> {suit} </option>)}
+							</select>
+							<select value={props.val2Ask} onChange={props.selectVal2}> 
+								{valKey.map(card=> <option key={`${card.key}2`} value={card.val}> {card.val} </option>)}
+							</select>
+
+							<select value={props.friendCondition2} onChange={props.selectFriendCondition2}> 
+								{conditions.map(condition=> <option key={`${condition.key}2`} value={condition.val}> {condition.val} </option>)}
+							</select>
+						</div>
+						<input type='submit' value='Call Your Friends!'/> 
+					</form>
+				 </div>
+				
+			</div>)
 }
 
 function Modal (props) {
