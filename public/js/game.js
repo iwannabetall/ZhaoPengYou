@@ -381,8 +381,15 @@ function create ()
 }
 
 function playHand() {
-	// console.log(dropZoneCardsTracker)
-	// console.log(dropZoneCardsSprites)
+	console.log(dropZoneCardsTracker)
+	console.log(dropZoneCardsSprites)
+	console.log(dropZoneCards)
+	console.log(yourHandList)
+	
+	for (var i = 0; i < dropZoneCards.length; i++) {
+		var playedInd = yourHandList.map(x=>x.card).indexOf(dropZoneCards[i])	
+		yourHandList.splice(playedInd, 1)
+	}
 	// dropzone cards 
 
 	dropZoneCardsSprites.forEach((card)=> card.destroy())
@@ -416,7 +423,7 @@ function sortHand(cards, currentCardObj, zhuSuit) {
 	yourHand.forEach((card)=> card.destroy())
 	var cardsInHand = yourHandList.map(x=> x.card)
 	var cardsByDeck = yourHandList.map(x=> x.deck)
-	console.log(cardsInHand)
+	// console.log(cardsInHand)
 
 	var zhu = '2'
 	var suits = ['diamonds', 'spades', 'clubs', 'hearts'];
@@ -431,7 +438,7 @@ function sortHand(cards, currentCardObj, zhuSuit) {
 	// handle zhu number and jokers
 	var jokers = cardsInHand.filter(x=>x.includes('joker'))
 	sortedHand = sortedHand.concat(jokers)
-	console.log(sortedHand)
+	// console.log(sortedHand)
 
 	for (var i = 0; i < sortedHand.length; i++){
 		self.add.sprite(30 * i + 50, 200, sortedHand[i]).setScale(0.5, 0.5).setName(`${sortedHand[i]}${cardsByDeck[i]}`).setData('card', 'inHand').setInteractive()	
