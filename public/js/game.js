@@ -51,10 +51,12 @@ var seatOrder
 var playerOrder
 var playerOrderInfo 
 var playerInfo  // needs to always be synced with server 
-var yourHandList = []  
-var yourHand
+var yourHandList = []  // list of card svg names 
+var yourHand  // sprites
 var self
 var last2ClickedCards = []  // for liang zhu but should really be 3 -- also make sure if clicked 2 zhu, that the most recent one is going to be flipped / make it obvious that 
+var kouDiCards
+var kouDiSprites
 var gameStarted = false  // 
 var zhuangJia // if not set, ask if theyre ok with X as it 
 var currentZhuang
@@ -86,7 +88,8 @@ function create ()
 
     // make sure to use arrow function for call back or "this" gets wrong reference 
 	socket.on('startGame', (data) => {
-		
+		kouDiSprites = []
+		kouDiCards = []
 		console.log(data)
 		// playerid = data.id 
 		seatOrder = data.order
@@ -159,9 +162,9 @@ function create ()
 	yourHand = []
 	
     socket.on('deal', (data)=> {
-		// console.log(data.card)
+		console.log(data.card)
 		
-		yourHandList.push(data.card)
+		yourHandList.push({card: data.card, deck: data.deck})
 
 		var card = this.add.sprite(400, 200, data.card).setScale(0.5, 0.5).setName(data.card).setInteractive()
 		card.setData('card', 'flip')
@@ -216,14 +219,16 @@ function create ()
 	    	gameObject.setTint(0xff0000)
 		    var cardClicked = gameObject.name  // unique id ie 2 of hearts from deck 1
 		    var cardVal = gameObject.texture.key  // ie 2 of hearts 
-		    console.log(gameObject)
+		    // console.log(gameObject)
+		    // console.log(cardVal, gameObject.name)
 		    if (!dropZoneCardsTracker.includes(cardClicked)) {
 		    	// if haven't selected this card yet, move it up, add to selected list 
 		    	gameObject.y = gameObject.y - 20
-		    	dropZoneCards.push(cardVal)
-		    	dropZoneCardsTracker.push(gameObject.name)
+		    	dropZoneCards.push(cardVal)  // eg king of spades 
+		    	dropZoneCardsTracker.push(gameObject.name)  // unique name ie might have 0 or 1 to indicate deck
 		    	dropZoneCardsSprites.push(gameObject)	
-
+		    	kouDiSprites.push(gameObject)  // dont need cardstracker -- just need one thing 
+		    	kouDiCards.push(gameObject.name)
 
 		    	// track for liang purposes - remove first added one, add just clicked
 		    	if (last2ClickedCards.length == 2) {
@@ -239,8 +244,10 @@ function create ()
 
 		    	var removeCardInd = dropZoneCards.indexOf(cardVal)
 		    	dropZoneCards.splice(removeCardInd, 1)
+		    	kouDiCards.splice(removeCardInd, 1)
 
 		    	dropZoneCardsSprites.splice(cardIndex, 1)  // remove gameobject from array
+		    	kouDiSprites.splice(cardIndex, 1)  // remove gameobject from array
 		    	// console.log(dropZoneCardsSprites)
 		    }	   
 		    
@@ -376,6 +383,8 @@ function create ()
 function playHand() {
 	// console.log(dropZoneCardsTracker)
 	// console.log(dropZoneCardsSprites)
+	// dropzone cards 
+
 	dropZoneCardsSprites.forEach((card)=> card.destroy())
 	// tell server what we're playing to tell everybody else
 	socket.emit("playHand", {cards: dropZoneCards, player: playerid});
@@ -405,6 +414,9 @@ function sortHand(cards, currentCardObj, zhuSuit) {
 
 	// pass zhu in as paramter 
 	yourHand.forEach((card)=> card.destroy())
+	var cardsInHand = yourHandList.map(x=> x.card)
+	var cardsByDeck = yourHandList.map(x=> x.deck)
+	console.log(cardsInHand)
 
 	var zhu = '2'
 	var suits = ['diamonds', 'spades', 'clubs', 'hearts'];
@@ -413,16 +425,16 @@ function sortHand(cards, currentCardObj, zhuSuit) {
 
 	for (var i = 0; i < suits.length; i++) {
 		// sort by suit 
-		var cardsBySuit = yourHandList.filter(x=>x.includes(suits[i]))
+		var cardsBySuit = cardsInHand.filter(x=>x.includes(suits[i]))
 		sortedHand = sortedHand.concat(cardsBySuit.sort())
 	}
 	// handle zhu number and jokers
-	var jokers = yourHandList.filter(x=>x.includes('joker'))
+	var jokers = cardsInHand.filter(x=>x.includes('joker'))
 	sortedHand = sortedHand.concat(jokers)
 	console.log(sortedHand)
 
 	for (var i = 0; i < sortedHand.length; i++){
-		self.add.sprite(30 * i + 50, 200, sortedHand[i]).setScale(0.5, 0.5).setName(sortedHand[i]).setInteractive()	
+		self.add.sprite(30 * i + 50, 200, sortedHand[i]).setScale(0.5, 0.5).setName(`${sortedHand[i]}${cardsByDeck[i]}`).setData('card', 'inHand').setInteractive()	
 	}
 
 	// how do i update yourHandList mid deal w/o missing a card??? --should prob sort server side?? 
