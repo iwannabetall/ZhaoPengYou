@@ -42,7 +42,7 @@ class Scoreboard extends React.Component {
 		// console.log(this.state.suit1Ask, this.state.val1Ask, this.state.friendCondition1, this.state.suit2Ask, this.state.val2Ask, this.state.friendCondition2)
 		// tell server to broadcast which cards were called for 
 	    event.preventDefault();	    
-		socket.emit('call friends', {firstAsk: `${this.state.val1Ask} of ${this.state.suit1Ask}`, condition1: this.state.friendCondition1, secondAsk: `${this.state.val2Ask} of ${this.state.suit2Ask}`, condition2: this.state.friendCondition2})
+		socket.emit('call friends', {firstAskVal: this.state.val1Ask, firstAskSuit: this.state.suit1Ask, condition1: this.state.friendCondition1, secondAskVal: this.state.val2Ask, secondAskSuit: this.state.suit2Ask, condition2: this.state.friendCondition2})
 
 	}
 
@@ -162,8 +162,8 @@ class Scoreboard extends React.Component {
     	socket.on('jiao', (data)=> {
     		// console.log(data)
     		this.setState({
-    			findFriend1: `${data.condition1} ${data.firstAsk}`, 
-    			findFriend2: `${data.condition2} ${data.secondAsk}`, 
+    			findFriend1: `${data.condition1} ${data.firstAskVal} of ${data.firstAskSuit}`, 
+    			findFriend2: `${data.condition2} ${data.secondAskVal} of ${data.secondAskSuit} `, 
     		})
     	})
 
@@ -263,8 +263,9 @@ function Rankings (props) {
 	return (
 			<div>
 				<h1>Score</h1>
+				<h3>ZhuangJia: {props.score.zhuangJia.name} </h3>
 				<h3>Level: {props.level}</h3>
-				{props.score.map(player=><div key={player.id}>{player.name}  {player.points}</div>)}
+				{props.score.players.map(player=><div key={player.id}>{player.name}  {player.points}</div>)}
 			</div>
 		)
 }

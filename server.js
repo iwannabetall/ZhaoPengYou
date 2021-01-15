@@ -28,7 +28,7 @@ var cardHistory = [] // cards played in a round by each player, embedded in roun
 var pointsInRound = 0 // points played in a ro`und 
 var votes = 0 
 var roundWinner // who won the round, either points or team
-var scoreBoardData = [] // what points and levels each player has.  should track who was zhuang in each game and what the teams were 
+var scoreBoardData = {} // what points and levels each player has.  should track who was zhuang in each game and what the teams were 
 var confirmZhuang = [] // track who has confirmed zhuangjia -- needs to match all players??? whati f there's an issue with the server tracking who's connected? or should i just do all player names? what if there's duplicate names? 
 var liangData
 var firstLiang = {}  // keep track of who flips zhu first case they get flipped and need to set priority 
@@ -36,6 +36,17 @@ firstLiang.name = null
 
 var startingLevel = 2 
 var gameStarted = false  // 
+
+// jiao de pai - track what cards are asked for -- should make it an array of objects case it's 1 or two friends?? !!!TODO
+var askedFriend1
+var askedFriend2
+var askedFriend1Condition
+var askedFriend2Condition
+var cardsBefore1 // need to track how many of the cards ie Ace of spades have been played to konw if they're on a team -- how many cards of the called card need to be played before theyre on a team -- when it's zero on a played card, theyre on the team 
+var cardsBefore2 
+var outsideCondition1  // need to track if the zhuang called for outside first, if they played their ace??  ehh dont think so 
+var outsideCondition2
+var teamSet = false
 
 var cardDeck = ["zace_of_diamonds", "2_of_diamonds", "3_of_diamonds", "4_of_diamonds", "5_of_diamonds", "6_of_diamonds", "7_of_diamonds", "8_of_diamonds", "90_of_diamonds", "910_of_diamonds", "jack_of_diamonds", "queen_of_diamonds", "rking_of_diamonds", "zace_of_spades", "2_of_spades", "3_of_spades", "4_of_spades", "5_of_spades", "6_of_spades", "7_of_spades", "8_of_spades", "90_of_spades", "910_of_spades", "jack_of_spades", "queen_of_spades", "rking_of_spades", "zace_of_clubs", "2_of_clubs", "3_of_clubs", "4_of_clubs", "5_of_clubs", "6_of_clubs", "7_of_clubs", "8_of_clubs", "90_of_clubs", "910_of_clubs", "jack_of_clubs", "queen_of_clubs", "rking_of_clubs", "zace_of_hearts", "2_of_hearts", "3_of_hearts", "4_of_hearts", "5_of_hearts", "6_of_hearts", "7_of_hearts", "8_of_hearts", "90_of_hearts", "910_of_hearts", "jack_of_hearts", "queen_of_hearts", "rking_of_hearts", 'red_joker', 'black_joker']
 
@@ -51,6 +62,31 @@ function generateDecks(decksNeeded) {
 	}
 
 	return fullCardDeck
+}
+
+function convertCardToSVGName(cardVal, suit) {
+	if (cardVal == 'Ace') {
+		cardVal = 'zace'
+	} else if (cardVal == 'King') {
+		cardVal = 'rking' 
+	} else if (cardVal == "10") {
+		cardVal = "910"
+	} 
+
+	return `${cardVal}_of_${suit}`
+}
+
+function determineFriends(condition) {
+	// find out how many times the card needs to be played before somebody is on your team
+	
+	var first = ['First', 'Outside first', 'Dead']
+	if (first.includes(condition)) {
+		return 0
+	} else if (condition == 'Second') {
+		return 1
+	} else if (condition == 'Third') {
+		return 2
+	}
 }
 
 function shuffle(array) {
@@ -83,6 +119,22 @@ function countPoints(card) {
 	}
 }
 
+function areYouOnMyTeam(cardsPlayed, cardSought, cardsBefore) {
+	// console.log('are you on my team', cardsPlayed, cardSought, cardsBefore)
+	var onTheTeam = false
+	if (cardsPlayed.includes(cardSought)) {
+
+		if (cardsBefore == 0){
+			console.log('youre on my team')
+			// whoever played is is on their team as long as it's not an 'outside and they're not zhuang jia so need ot track who zhuang jia is 
+			onTheTeam = true
+		} else {
+			cardsBefore = cardsBefore - 1
+		}
+	}
+
+	return {cardsBefore: cardsBefore, onTheTeam: onTheTeam}
+}
 
 io.on('connection', function (socket) {
 
@@ -94,13 +146,16 @@ io.on('connection', function (socket) {
     var randomNames = ['squirtle', 'pikachu', 'snorlax']
     var basicInfo = {name: randomNames[Math.round(Math.random()*2)], id: socket.id}
     players.push(socket.id);
-    playerInfo.push(basicInfo)
     basicInfo.points = 0 
-    scoreBoardData.push(basicInfo)
+    playerInfo.push(basicInfo)   
 
     socket.on('draw cards', function () {
-
-    	// reset in game data 
+		// reset in game data 
+	    scoreBoardData.players = []
+    	scoreBoardData.players = playerInfo
+    	scoreBoardData.zhuangJia = {}
+    	console.log('reset scoreBoardData', scoreBoardData)
+    	
 		liangData = {}
 		liangData.numberFlipped = 0
 		liangData.flippedBy = null 
@@ -123,10 +178,6 @@ io.on('connection', function (socket) {
         var cardInd = 0
         var kouDi = 8  // number of cards at bottom 
     	var cardCount = 0
-
-    	var cardInd = 0
-        var kouDi = 8  // number of cards at bottom 
-        var cardCount = 0
         
 		while (cardInd < shuffledCards.length - kouDi) {
 			if (cardInd % players.length == 0) {
@@ -171,7 +222,10 @@ io.on('connection', function (socket) {
 			confirmZhuang.push(data.responseByPlayer)
 			if (confirmZhuang.length == players.length){
 				playerInfo[order].zhuang = true 
-				io.emit('zhuang confirmed', {playerInfo: playerInfo, zhuang: data.zhuang})		
+				scoreBoardData.zhuangJia = {name: playerInfo[order].name, id: data.zhuang.id, teammates: []}
+				// remove zhuangjia from the players list, don't need to track for her ?? or just mark her as zhuangjia team and don't display?  prob the latter just in case we wan ot display it later? 			
+				io.emit('zhuang confirmed', {playerInfo: playerInfo, zhuang: data.zhuang})
+				io.emit('updateScore', {scoreBoard: scoreBoardData})
 			}
 			
 		}
@@ -179,19 +233,29 @@ io.on('connection', function (socket) {
 	})
 
 	socket.on('call friends', function(data) {
-		console.log(data)
+		askedFriend1 = convertCardToSVGName(data.firstAskVal, data.firstAskSuit)
+		askedFriend2 = convertCardToSVGName(data.secondAskVal, data.secondAskSuit)
+
+		askedFriend1Condition = data.condition1
+		askedFriend2Condition = data.condition2
+
+		cardsBefore1 = determineFriends(data.condition1)
+		cardsBefore2 = determineFriends(data.condition2)
+		
+		console.log(askedFriend1, askedFriend1Condition, cardsBefore1)
+		console.log(askedFriend2, askedFriend2Condition, cardsBefore2)
+
 		io.emit('jiao', data)
 	})
 
     socket.on('round winner', function(data){
     	// record who won the round 
     	roundHistory.winner = data.id
-    	// console.log(data)
     	// make sure at least two people clicked the same person before give them points
+    	var scoreBoardOrder = scoreBoardData.players.map(x => x.id)
 
-    	var scoreBoardOrder = scoreBoardData.map(x => x.id)
+    	scoreBoardData.players[scoreBoardOrder.indexOf(data.id)].points = scoreBoardData.players[scoreBoardOrder.indexOf(data.id)].points + pointsInRound
 
-    	scoreBoardData[scoreBoardOrder.indexOf(data.id)].points = scoreBoardData[scoreBoardOrder.indexOf(data.id)].points + pointsInRound
     	io.emit('updateScore', {scoreBoard: scoreBoardData})
     })
 
@@ -210,6 +274,23 @@ io.on('connection', function (socket) {
     	roundHistory.points = pointsInRound
     	roundHistory.cards = cardHistory
     	// roundHistory = roundHistory.concat(hand)
+
+    	// check to see if they played a called card to be on a team if teams arent set yet 
+    	if (!teamSet) {
+    		// check to see if they're on your team 
+    		// (cardsPlayed, cardSought, condition, cardsBefore)
+    		var friend1 = areYouOnMyTeam(cardHand.cards, askedFriend1, cardsBefore1)
+    		cardsBefore1 = friend1.cardsBefore
+    		var friend2 = areYouOnMyTeam(cardHand.cards, askedFriend2, cardsBefore2)
+    		cardsBefore2 = friend2.cardsBefore
+
+    		if (friend1 == true || friend2 == true) {    			
+    			console.log('scoreBoardData', scoreBoardData)
+    		}
+
+    		console.log(friend1, friend2) 
+    	}
+    	
 
         io.emit('cardPlayed', {cards: cardHand.cards, player: cardHand.player, points: pointsInRound});
     });
@@ -231,10 +312,10 @@ io.on('connection', function (socket) {
 
     socket.on('disconnect', function () {
         console.log('A user disconnected: ' + socket.id);
-    	var competitors = scoreBoardData.map(x => x.id)
-    	var removeP = competitors.indexOf(socket.id)
+    	// var competitors = scoreBoardData.map(x => x.id)
+    	// var removeP = competitors.indexOf(socket.id)
 
-    	scoreBoardData.splice(removeP, 1)
+    	// scoreBoardData.splice(removeP, 1)
     	// DO I NEED TO UPDATE THE SCOREBOARD WHEN A PLAYER LEAVES??!?  prob no need to?? 
 
         var index = players.indexOf(socket.id)
@@ -248,10 +329,9 @@ io.on('connection', function (socket) {
     	// console.log(data) 
     	var order = players.indexOf(data.id)
     	// console.log('set name', players, playerInfo, data, order)
-    	playerInfo[order].name = data.name
-    	scoreBoardData[order].name = data.name
-    	console.log('scoreBoardData', scoreBoardData)
-
+    	playerInfo[order].name = data.name    	
+    	// scoreBoardData.players[order].name = data.name   // DO I NEED THIS???
+    	
     	io.emit('playing order', playerInfo)
     })
 
