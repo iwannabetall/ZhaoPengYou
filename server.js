@@ -124,11 +124,12 @@ function areYouOnMyTeam(cardsPlayed, cardSought, cardsBefore) {
 	var onTheTeam = false
 	if (cardsPlayed.includes(cardSought)) {
 
+		// make sure that it's not the zhuangjia playing that's affecting cardsbefore!!!*** TODO
 		if (cardsBefore == 0){
 			console.log('youre on my team')
 			// whoever played is is on their team as long as it's not an 'outside and they're not zhuang jia so need ot track who zhuang jia is 
 			onTheTeam = true
-		} else {
+		} else {			
 			cardsBefore = cardsBefore - 1
 		}
 	}
@@ -147,7 +148,8 @@ io.on('connection', function (socket) {
     var basicInfo = {name: randomNames[Math.round(Math.random()*2)], id: socket.id}
     players.push(socket.id);
     basicInfo.points = 0 
-    playerInfo.push(basicInfo)   
+    basicInfo.joinedZhuang = false // to make it easier to determine who is zhuangjia after first round     
+    playerInfo.push(basicInfo)   // **playerInfo is where order of seating is set.
 
     socket.on('draw cards', function () {
 		// reset in game data 
@@ -222,6 +224,7 @@ io.on('connection', function (socket) {
 			confirmZhuang.push(data.responseByPlayer)
 			if (confirmZhuang.length == players.length){
 				playerInfo[order].zhuang = true 
+				playerInfo[order].joinedZhuang = true 
 				scoreBoardData.zhuangJia = {name: playerInfo[order].name, id: data.zhuang.id, teammates: []}
 				// remove zhuangjia from the players list, don't need to track for her ?? or just mark her as zhuangjia team and don't display?  prob the latter just in case we wan ot display it later? 			
 				io.emit('zhuang confirmed', {playerInfo: playerInfo, zhuang: data.zhuang})
@@ -241,7 +244,7 @@ io.on('connection', function (socket) {
 
 		cardsBefore1 = determineFriends(data.condition1)
 		cardsBefore2 = determineFriends(data.condition2)
-		
+
 		console.log(askedFriend1, askedFriend1Condition, cardsBefore1)
 		console.log(askedFriend2, askedFriend2Condition, cardsBefore2)
 
@@ -284,14 +287,16 @@ io.on('connection', function (socket) {
     		var friend2 = areYouOnMyTeam(cardHand.cards, askedFriend2, cardsBefore2)
     		cardsBefore2 = friend2.cardsBefore
 
-    		if (friend1 == true || friend2 == true) {    			
-    			console.log('scoreBoardData', scoreBoardData)
-    		}
-
+    		if (friend1.onTheTeam == true || friend2.onTheTeam == true) {
+				var scoreBoardOrder = scoreBoardData.players.map(x => x.id)
+				scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].joinedZhuang = true
+				scoreBoardData.zhuangJia.teammates.push(scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].name)
+			}
+    		
     		console.log(friend1, friend2) 
     	}
     	
-
+    	io.emit('updateScore', {scoreBoard: scoreBoardData})
         io.emit('cardPlayed', {cards: cardHand.cards, player: cardHand.player, points: pointsInRound});
     });
 

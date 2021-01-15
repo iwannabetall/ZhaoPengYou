@@ -263,9 +263,10 @@ function Rankings (props) {
 	return (
 			<div>
 				<h1>Score</h1>
-				<h3>ZhuangJia: {props.score.zhuangJia.name} </h3>
+				<h3>ZhuangJia & team: {props.score.zhuangJia.name} </h3>
+				{props.score.players.filter(x=>x.joinedZhuang == true).map(player => <div key={player.id}>{player.name} </div>)}
 				<h3>Level: {props.level}</h3>
-				{props.score.players.map(player=><div key={player.id}>{player.name}  {player.points}</div>)}
+				{props.score.players.filter(x=>x.joinedZhuang == false).map(player=><div key={player.id}>{player.name}  {player.points}</div>)}
 			</div>
 		)
 }
