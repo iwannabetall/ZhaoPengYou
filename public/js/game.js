@@ -162,7 +162,7 @@ function create ()
 	yourHand = []
 	
     socket.on('deal', (data)=> {
-		console.log(data.card)
+		// console.log(data.card)
 		
 		yourHandList.push({card: data.card, deck: data.deck})
 
@@ -228,7 +228,7 @@ function create ()
 		    	dropZoneCardsTracker.push(gameObject.name)  // unique name ie might have 0 or 1 to indicate deck
 		    	dropZoneCardsSprites.push(gameObject)	
 		    	kouDiSprites.push(gameObject)  // dont need cardstracker -- just need one thing 
-		    	kouDiCards.push(gameObject.name)
+		    	kouDiCards.push(cardVal)
 
 		    	// track for liang purposes - remove first added one, add just clicked
 		    	if (last2ClickedCards.length == 2) {
@@ -435,6 +435,7 @@ function sortHand(cards, currentCardObj, zhuSuit) {
 		var cardsBySuit = cardsInHand.filter(x=>x.includes(suits[i]))
 		sortedHand = sortedHand.concat(cardsBySuit.sort())
 	}
+
 	// handle zhu number and jokers
 	var jokers = cardsInHand.filter(x=>x.includes('joker'))
 	sortedHand = sortedHand.concat(jokers)
@@ -445,6 +446,9 @@ function sortHand(cards, currentCardObj, zhuSuit) {
 	}
 
 	// how do i update yourHandList mid deal w/o missing a card??? --should prob sort server side?? 
+	// reset hand
+	dropZoneCardsTracker = []
+	dropZoneCards = []
 	
 }
 

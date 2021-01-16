@@ -110,9 +110,14 @@ class Scoreboard extends React.Component {
 	}
 
 	KouDi() {
-		dropZoneCardsSprites.forEach((card)=> card.destroy())
+		kouDiSprites.forEach((card)=> card.destroy())
 
-		console.log(dropZoneCardsSprites, dropZoneCards)
+		for (var i = 0; i < kouDiCards.length; i++) {
+			var playedInd = yourHandList.map(x=>x.card).indexOf(kouDiCards[i])	
+			yourHandList.splice(playedInd, 1)
+		}
+
+		console.log(yourHandList, kouDiCards)
 	}
 
 	componentDidMount() {
