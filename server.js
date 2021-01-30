@@ -37,18 +37,23 @@ firstLiang.name = null
 var startingLevel = 2 
 var gameStarted = false  // 
 
+var numCardsInHand  // how many cards in hand to start
+var kouDiCards
+var bottom8Cards // cards that go to zhuangjia 
 // jiao de pai - track what cards are asked for -- should make it an array of objects case it's 1 or two friends?? !!!TODO
-var askedFriend1
-var askedFriend2
-var askedFriend1Condition
-var askedFriend2Condition
-var cardsBefore1 // need to track how many of the cards ie Ace of spades have been played to konw if they're on a team -- how many cards of the called card need to be played before theyre on a team -- when it's zero on a played card, theyre on the team 
-var cardsBefore2 
+var askedFriend1 //= 'zace_of_diamonds'
+var askedFriend2 // = 'zace_of_spades'
+var askedFriend1Condition //= 'First'
+var askedFriend2Condition // = 'First'
+var cardsBefore1 //= 0 // need to track how many of the cards ie Ace of spades have been played to konw if they're on a team -- how many cards of the called card need to be played before theyre on a team -- when it's zero on a played card, theyre on the team 
+var cardsBefore2 //= 0
 var outsideCondition1  // need to track if the zhuang called for outside first, if they played their ace??  ehh dont think so 
 var outsideCondition2
 var teamSet = false
 
-var cardDeck = ["zace_of_diamonds", "2_of_diamonds", "3_of_diamonds", "4_of_diamonds", "5_of_diamonds", "6_of_diamonds", "7_of_diamonds", "8_of_diamonds", "90_of_diamonds", "910_of_diamonds", "jack_of_diamonds", "queen_of_diamonds", "rking_of_diamonds", "zace_of_spades", "2_of_spades", "3_of_spades", "4_of_spades", "5_of_spades", "6_of_spades", "7_of_spades", "8_of_spades", "90_of_spades", "910_of_spades", "jack_of_spades", "queen_of_spades", "rking_of_spades", "zace_of_clubs", "2_of_clubs", "3_of_clubs", "4_of_clubs", "5_of_clubs", "6_of_clubs", "7_of_clubs", "8_of_clubs", "90_of_clubs", "910_of_clubs", "jack_of_clubs", "queen_of_clubs", "rking_of_clubs", "zace_of_hearts", "2_of_hearts", "3_of_hearts", "4_of_hearts", "5_of_hearts", "6_of_hearts", "7_of_hearts", "8_of_hearts", "90_of_hearts", "910_of_hearts", "jack_of_hearts", "queen_of_hearts", "rking_of_hearts", 'red_joker', 'black_joker']
+// var cardDeck = ["zace_of_diamonds", "2_of_diamonds", "3_of_diamonds", "4_of_diamonds", "5_of_diamonds", "6_of_diamonds", "7_of_diamonds", "8_of_diamonds", "90_of_diamonds", "910_of_diamonds", "jack_of_diamonds", "queen_of_diamonds", "rking_of_diamonds", "zace_of_spades", "2_of_spades", "3_of_spades", "4_of_spades", "5_of_spades", "6_of_spades", "7_of_spades", "8_of_spades", "90_of_spades", "910_of_spades", "jack_of_spades", "queen_of_spades", "rking_of_spades", "zace_of_clubs", "2_of_clubs", "3_of_clubs", "4_of_clubs", "5_of_clubs", "6_of_clubs", "7_of_clubs", "8_of_clubs", "90_of_clubs", "910_of_clubs", "jack_of_clubs", "queen_of_clubs", "rking_of_clubs", "zace_of_hearts", "2_of_hearts", "3_of_hearts", "4_of_hearts", "5_of_hearts", "6_of_hearts", "7_of_hearts", "8_of_hearts", "90_of_hearts", "910_of_hearts", "jack_of_hearts", "queen_of_hearts", "rking_of_hearts", 'red_joker', 'black_joker']
+
+var cardDeck = ["zace_of_diamonds", "2_of_diamonds", "90_of_diamonds", "910_of_diamonds", "jack_of_diamonds", "queen_of_diamonds", "rking_of_diamonds", "zace_of_spades", "2_of_spades", "3_of_spades", "4_of_spades", "5_of_spades","90_of_spades", "910_of_spades", "rking_of_spades", "zace_of_clubs", "2_of_clubs", "5_of_clubs","910_of_clubs", "jack_of_clubs", "queen_of_clubs", "rking_of_clubs", "zace_of_hearts", "90_of_hearts", "910_of_hearts", "jack_of_hearts", "queen_of_hearts", "rking_of_hearts"]
 
 function generateDecks(decksNeeded) {
 	var fullCardDeck = []	
@@ -62,6 +67,16 @@ function generateDecks(decksNeeded) {
 	}
 
 	return fullCardDeck
+}
+
+function tallyScoreByTeam(scores) {
+	// for team not on zhuang jia
+	var totalpts = scores.filter(x=> x.joinedZhuang == false).map(x=>x.points).reduce((acc, curr) => acc + curr, 0)
+	
+	console.log('tallyScoreByTeam', totalpts)
+	
+	return totalpts
+	
 }
 
 function convertCardToSVGName(cardVal, suit) {
@@ -145,11 +160,15 @@ io.on('connection', function (socket) {
     io.to(socket.id).emit('playerid', socket.id)
 
     var randomNames = ['squirtle', 'pikachu', 'snorlax']
-    var basicInfo = {name: randomNames[Math.round(Math.random()*2)], id: socket.id}
+
+    // joinedZhuang to make it easier to determine who is zhuangjia after first; lastRound to determine when the game is over 
+    var basicInfo = {name: randomNames[Math.round(Math.random()*2)], id: socket.id, joinedZhuang: false, lastRound: false, points: 0, level: null}  
     players.push(socket.id);
-    basicInfo.points = 0 
-    basicInfo.joinedZhuang = false // to make it easier to determine who is zhuangjia after first round     
+    // basicInfo.points = 0 
+    // basicInfo.joinedZhuang = false round     
     playerInfo.push(basicInfo)   // **playerInfo is where order of seating is set.
+
+    // set scoreboard levels 
 
     socket.on('draw cards', function () {
 		// reset in game data 
@@ -157,13 +176,17 @@ io.on('connection', function (socket) {
     	scoreBoardData.players = playerInfo
     	scoreBoardData.zhuangJia = {}
     	console.log('reset scoreBoardData', scoreBoardData)
-    	
+        
 		liangData = {}
 		liangData.numberFlipped = 0
 		liangData.flippedBy = null 
 		confirmZhuang = []
-    	
+    	kouDiCards = []  // cards being discarded 
+
     	for (var i = 0; i < players.length; i++) {
+            if (scoreBoardData.players[i].level == null){
+                scoreBoardData.players[i].level = 2 
+            }
     		playerInfo[i].zhuang = false
     		io.to(players[i]).emit('startGame', {order: i, players: players, playerInfo: playerInfo})  
     	}
@@ -172,7 +195,7 @@ io.on('connection', function (socket) {
     	if (true) {
     		// generate 2 decks 
     		var allCards = generateDecks(2)
-    		
+    		numCardsInHand = 23
     	}    	
 		
         var shuffledCards = shuffle(allCards)
@@ -180,12 +203,17 @@ io.on('connection', function (socket) {
         var cardInd = 0
         var kouDi = 8  // number of cards at bottom 
     	var cardCount = 0
-        
-		while (cardInd < shuffledCards.length - kouDi) {
+        console.log('shuffledCards', shuffledCards.length)
+        bottom8Cards = shuffledCards.splice(shuffledCards.length - 8)
+        console.log('bottom8Cards', bottom8Cards)
+        console.log('shuffledCards', shuffledCards.length)
+		// while (cardInd < shuffledCards.length - kouDi) {
+        while (cardInd < 15){
 			if (cardInd % players.length == 0) {
 				cardCount = cardCount + 1
 			}
-			var whichPlayer = cardInd % players.length			
+			var whichPlayer = cardInd % players.length
+            console.log('deal', shuffledCards[cardInd].card)
 			io.to(players[whichPlayer]).emit('deal', {card: shuffledCards[cardInd].card, deck:  shuffledCards[cardInd].deck, count: cardCount});
 			cardInd = cardInd + 1
 		}
@@ -226,8 +254,11 @@ io.on('connection', function (socket) {
 				playerInfo[order].zhuang = true 
 				playerInfo[order].joinedZhuang = true 
 				scoreBoardData.zhuangJia = {name: playerInfo[order].name, id: data.zhuang.id, teammates: []}
-				// remove zhuangjia from the players list, don't need to track for her ?? or just mark her as zhuangjia team and don't display?  prob the latter just in case we wan ot display it later? 			
+				// remove zhuangjia from the players list, don't need to track for her ?? or just mark her as zhuangjia team and don't display?  prob the latter just in case we wan ot display it later? 	
+				var pts = tallyScoreByTeam(scoreBoardData.players)		
+				console.log(pts)
 				io.emit('zhuang confirmed', {playerInfo: playerInfo, zhuang: data.zhuang})
+                io.to(data.zhuang.id).emit('send bottom 8', {bottom8Cards: bottom8Cards, numCardsInHand: numCardsInHand})
 				io.emit('updateScore', {scoreBoard: scoreBoardData})
 			}
 			
@@ -259,6 +290,9 @@ io.on('connection', function (socket) {
 
     	scoreBoardData.players[scoreBoardOrder.indexOf(data.id)].points = scoreBoardData.players[scoreBoardOrder.indexOf(data.id)].points + pointsInRound
 
+    	var pts = tallyScoreByTeam(scoreBoardData.players)		
+		console.log(pts)
+
     	io.emit('updateScore', {scoreBoard: scoreBoardData})
     })
 
@@ -278,6 +312,7 @@ io.on('connection', function (socket) {
     	roundHistory.cards = cardHistory
     	// roundHistory = roundHistory.concat(hand)
 
+    	var scoreBoardOrder = scoreBoardData.players.map(x => x.id)				
     	// check to see if they played a called card to be on a team if teams arent set yet 
     	if (!teamSet) {
     		// check to see if they're on your team 
@@ -288,17 +323,78 @@ io.on('connection', function (socket) {
     		cardsBefore2 = friend2.cardsBefore
 
     		if (friend1.onTheTeam == true || friend2.onTheTeam == true) {
-				var scoreBoardOrder = scoreBoardData.players.map(x => x.id)
 				scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].joinedZhuang = true
 				scoreBoardData.zhuangJia.teammates.push(scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].name)
 			}
     		
     		console.log(friend1, friend2) 
     	}
-    	
+    	console.log(cardHand)
+    	// if everybody has played their last hand, check koudi, add points depending on which team won
+    	if (cardHand.lastRound == true) {
+    		scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].lastRound = true
+    		// add kou di points -- track kou di on server side??? 
+    		// calculate points by team --
+    		var totalPoints = tallyScoreByTeam(scoreBoardData.players)
+    		console.log('final score', totalPoints)
+
+    		var kouDiPoints = 0
+	    	for(var i = 0; i < kouDiCards.length; i++) {
+	    		kouDiPoints = kouDiPoints + countPoints(kouDiCards[i])
+	    	}
+            // NEED TO DEAL WITH WHO WON THE LAST HAND FOR KOUDI
+            // change levels and set zhuangjia 
+            if (totalPoints == 0) {
+                // zhuangjia goes up 3 
+                scoreBoardData.players.filter(x=> x.joinedZhuang == true).map(x => x.level = x.level + 3)
+
+            } else if (totalPoints < 60) {
+                //zhuang jia team goes up 2 levels 
+                scoreBoardData.players.filter(x=> x.joinedZhuang == true).map(x => x.level = x.level + 2)
+
+
+            } else if (totalPoints < 110) {
+                //zhuang jia team goes up 1 level
+                scoreBoardData.players.filter(x=> x.joinedZhuang == true).map(x => x.level = x.level + 1)
+
+
+            } else if (totalPoints < 160) {
+                // between 110-160, shangtai 
+                
+
+            } else if (totalPoints < 210) {
+                //between 160 and 210, go up one, switch zhuangjia sides 
+                scoreBoardData.players.filter(x=> x.joinedZhuang == false).map(x => x.level = x.level + 1)
+
+            } else if (totalPoints < 260) {
+                // btwn 210-260, zhuangjia flips, team goes up 2 levels 
+                scoreBoardData.players.filter(x=> x.joinedZhuang == false).map(x => x.level = x.level + 2)
+                
+            } else {
+                // 260+, go up 3 levels 
+                scoreBoardData.players.filter(x=> x.joinedZhuang == false).map(x => x.level = x.level + 3)
+
+            }
+            
+            console.log('koudi points', kouDiPoints)
+	    	
+    	} 
+
+    	// need to track scores by team once teams are found 
+
+
     	io.emit('updateScore', {scoreBoard: scoreBoardData})
         io.emit('cardPlayed', {cards: cardHand.cards, player: cardHand.player, points: pointsInRound});
     });
+
+    socket.on('kouDi', function(discardedCards) {
+    	console.log('koudi', discardedCards) 
+    	kouDiCards = discardedCards
+    	
+    	// return how many points discarded?? 
+    	io.emit('')
+
+    })
 
     socket.on('clearRound', function() {
     	// calculate number of points in the round and who won the points 

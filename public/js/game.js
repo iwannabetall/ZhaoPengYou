@@ -62,6 +62,7 @@ var zhuangJia // if not set, ask if theyre ok with X as it
 var currentZhuang
 var currentZhuangId
 
+
 socket.on('playerid', function(id){	
 	playerid = id
 })
@@ -313,6 +314,17 @@ function create ()
 	//     // this.socket.emit('cardPlayed', gameObject, self.isPlayerA);
 	// })
 
+	socket.on('send bottom 8', (cards) => {
+		console.log(cards.bottom8Cards)
+		for (var i = 0; i < cards.bottom8Cards.length; i++) {
+			var newCard = this.add.sprite(30 * (cards.numCardsInHand + i) + 50, 600, cards.bottom8Cards[i].card).setScale(0.5, 0.5).setName(`${cards.bottom8Cards[i].card}${cards.bottom8Cards[i].deck}`).setInteractive()
+			newCard.setData('card', 'inHand')
+			yourHand.push(newCard)	
+		}
+		
+
+	})
+
 	socket.on('cardPlayed', (handPlayed)=> {
 		var hand = handPlayed.cards
 		var playerId = handPlayed.player
@@ -386,15 +398,19 @@ function playHand() {
 	console.log(dropZoneCards)
 	console.log(yourHandList)
 	
+	var lastRound = false
 	for (var i = 0; i < dropZoneCards.length; i++) {
 		var playedInd = yourHandList.map(x=>x.card).indexOf(dropZoneCards[i])	
 		yourHandList.splice(playedInd, 1)
 	}
 	// dropzone cards 
+	if(yourHandList.length == 0) {
+		lastRound = true
+	}
 
 	dropZoneCardsSprites.forEach((card)=> card.destroy())
 	// tell server what we're playing to tell everybody else
-	socket.emit("playHand", {cards: dropZoneCards, player: playerid});
+	socket.emit("playHand", {cards: dropZoneCards, player: playerid, lastRound: lastRound});
 	dropZoneCardsTracker = []
 	dropZoneCards = []
 }
@@ -419,7 +435,7 @@ function startCardDraw() {
 
 function sortHand(cards, currentCardObj, zhuSuit) {
 
-	// pass zhu in as paramter 
+	// pass zhu in as parameter 
 	yourHand.forEach((card)=> card.destroy())
 	var cardsInHand = yourHandList.map(x=> x.card)
 	var cardsByDeck = yourHandList.map(x=> x.deck)
