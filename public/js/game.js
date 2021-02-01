@@ -390,6 +390,25 @@ function create ()
 	socket.on('gameStarted', (data)=> {
 		console.log(data)
 	})
+
+	socket.on('play your cards', () => {
+		var lastRound = false
+		for (var i = 0; i < dropZoneCards.length; i++) {
+			var playedInd = yourHandList.map(x=>x.card).indexOf(dropZoneCards[i])	
+			yourHandList.splice(playedInd, 1)
+		}
+		// dropzone cards 
+		if(yourHandList.length == 0) {
+			lastRound = true
+		}
+
+		dropZoneCardsSprites.forEach((card)=> card.destroy())
+		socket.emit("playHand", {cards: dropZoneCards, player: playerid, lastRound: lastRound});
+	
+		// tell server what we're playing to tell everybody else
+		dropZoneCardsTracker = []
+		dropZoneCards = []
+	})
 }
 
 function playHand() {
@@ -398,21 +417,7 @@ function playHand() {
 	console.log(dropZoneCards)
 	console.log(yourHandList)
 	
-	var lastRound = false
-	for (var i = 0; i < dropZoneCards.length; i++) {
-		var playedInd = yourHandList.map(x=>x.card).indexOf(dropZoneCards[i])	
-		yourHandList.splice(playedInd, 1)
-	}
-	// dropzone cards 
-	if(yourHandList.length == 0) {
-		lastRound = true
-	}
-
-	dropZoneCardsSprites.forEach((card)=> card.destroy())
-	// tell server what we're playing to tell everybody else
-	socket.emit("playHand", {cards: dropZoneCards, player: playerid, lastRound: lastRound});
-	dropZoneCardsTracker = []
-	dropZoneCards = []
+	socket.emit('can I go', playerid)	
 }
 
 function clearTable() {

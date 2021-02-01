@@ -51,6 +51,8 @@ var outsideCondition1  // need to track if the zhuang called for outside first, 
 var outsideCondition2
 var teamSet = false
 
+var highestHand // track which hand is the highest and who it belongs to in each round so it's easier to determine winner 
+
 // var cardDeck = ["zace_of_diamonds", "2_of_diamonds", "3_of_diamonds", "4_of_diamonds", "5_of_diamonds", "6_of_diamonds", "7_of_diamonds", "8_of_diamonds", "90_of_diamonds", "910_of_diamonds", "jack_of_diamonds", "queen_of_diamonds", "rking_of_diamonds", "zace_of_spades", "2_of_spades", "3_of_spades", "4_of_spades", "5_of_spades", "6_of_spades", "7_of_spades", "8_of_spades", "90_of_spades", "910_of_spades", "jack_of_spades", "queen_of_spades", "rking_of_spades", "zace_of_clubs", "2_of_clubs", "3_of_clubs", "4_of_clubs", "5_of_clubs", "6_of_clubs", "7_of_clubs", "8_of_clubs", "90_of_clubs", "910_of_clubs", "jack_of_clubs", "queen_of_clubs", "rking_of_clubs", "zace_of_hearts", "2_of_hearts", "3_of_hearts", "4_of_hearts", "5_of_hearts", "6_of_hearts", "7_of_hearts", "8_of_hearts", "90_of_hearts", "910_of_hearts", "jack_of_hearts", "queen_of_hearts", "rking_of_hearts", 'red_joker', 'black_joker']
 
 var cardDeck = ["zace_of_diamonds", "2_of_diamonds", "90_of_diamonds", "910_of_diamonds", "jack_of_diamonds", "queen_of_diamonds", "rking_of_diamonds", "zace_of_spades", "2_of_spades", "3_of_spades", "4_of_spades", "5_of_spades","90_of_spades", "910_of_spades", "rking_of_spades", "zace_of_clubs", "2_of_clubs", "5_of_clubs","910_of_clubs", "jack_of_clubs", "queen_of_clubs", "rking_of_clubs", "zace_of_hearts", "90_of_hearts", "910_of_hearts", "jack_of_hearts", "queen_of_hearts", "rking_of_hearts"]
@@ -162,7 +164,8 @@ io.on('connection', function (socket) {
     var randomNames = ['squirtle', 'pikachu', 'snorlax']
 
     // joinedZhuang to make it easier to determine who is zhuangjia after first; lastRound to determine when the game is over 
-    var basicInfo = {name: randomNames[Math.round(Math.random()*2)], id: socket.id, joinedZhuang: false, lastRound: false, points: 0, level: null}  
+    var basicInfo = {name: randomNames[Math.round(Math.random()*2)], id: socket.id, joinedZhuang: false, lastRound: false, points: 0, level: null, playedHand: false, yourTurn: false}
+      // leadsRound = who plays first 
     players.push(socket.id);
     // basicInfo.points = 0 
     // basicInfo.joinedZhuang = false round     
@@ -175,6 +178,8 @@ io.on('connection', function (socket) {
 	    scoreBoardData.players = []
     	scoreBoardData.players = playerInfo
     	scoreBoardData.zhuangJia = {}
+        scoreBoardData.whoseTurn = null 
+
     	console.log('reset scoreBoardData', scoreBoardData)
         
 		liangData = {}
@@ -253,6 +258,8 @@ io.on('connection', function (socket) {
 			if (confirmZhuang.length == players.length){
 				playerInfo[order].zhuang = true 
 				playerInfo[order].joinedZhuang = true 
+                playerInfo[order].yourTurn = true
+                scoreBoardData.whoseTurn = data.zhuang.id
 				scoreBoardData.zhuangJia = {name: playerInfo[order].name, id: data.zhuang.id, teammates: []}
 				// remove zhuangjia from the players list, don't need to track for her ?? or just mark her as zhuangjia team and don't display?  prob the latter just in case we wan ot display it later? 	
 				var pts = tallyScoreByTeam(scoreBoardData.players)		
@@ -296,52 +303,76 @@ io.on('connection', function (socket) {
     	io.emit('updateScore', {scoreBoard: scoreBoardData})
     })
 
+    socket.on('can I go', function (player) {
+        // check see that it's that player's turn to play their hand, dont let people play out of order        
+        if (player == scoreBoardData.whoseTurn) {
+            socket.emit('play your cards')    
+        } else {
+            console.log('not your turn')
+        }
+        
+    })
+
     socket.on('playHand', function (cardHand) {
     	// server needs to keep track of what cards are played in a round and who plays it so we can clear the hand later / track for history     	
     	//array of objects w/keys where user is the key and cards is the value
-    	// check see that it's that player's turn to play their hand 
-    	console.log('play', cardHand)
-    	for (var i = 0; i < cardHand.cards.length; i++) {    		
-    		pointsInRound = pointsInRound + countPoints(cardHand.cards[i])
-    	}
-    	var hand = {}
-    	hand.player = cardHand.player
-    	hand.cards = cardHand.cards
-    	cardHistory.push(hand)    	
-    	roundHistory.points = pointsInRound
-    	roundHistory.cards = cardHistory
-    	// roundHistory = roundHistory.concat(hand)
+    
+    	var scoreBoardOrder = scoreBoardData.players.map(x => x.id)             
+        // update whose turn it is 
+        var turn = scoreBoardOrder.indexOf(cardHand.player)
+        if (turn + 1 > scoreBoardOrder.length - 1) {
+            // check if it's the last one in order 
+            turn = 0
+            scoreBoardData.whoseTurn = scoreBoardData.players[turn].id
+        } else {
+            // else next person in line 
+            turn = turn + 1
+            scoreBoardData.whoseTurn = scoreBoardData.players[turn].id
+        }
 
-    	var scoreBoardOrder = scoreBoardData.players.map(x => x.id)				
-    	// check to see if they played a called card to be on a team if teams arent set yet 
-    	if (!teamSet) {
-    		// check to see if they're on your team 
-    		// (cardsPlayed, cardSought, condition, cardsBefore)
-    		var friend1 = areYouOnMyTeam(cardHand.cards, askedFriend1, cardsBefore1)
-    		cardsBefore1 = friend1.cardsBefore
-    		var friend2 = areYouOnMyTeam(cardHand.cards, askedFriend2, cardsBefore2)
-    		cardsBefore2 = friend2.cardsBefore
+        console.log('play', cardHand)
+        console.log('playhand scoreBoard', scoreBoardData)
+        
+        for (var i = 0; i < cardHand.cards.length; i++) {           
+            pointsInRound = pointsInRound + countPoints(cardHand.cards[i])
+        }
+        var hand = {}
+        hand.player = cardHand.player
+        hand.cards = cardHand.cards
+        cardHistory.push(hand)      
+        roundHistory.points = pointsInRound
+        roundHistory.cards = cardHistory
+        // roundHistory = roundHistory.concat(hand)
 
-    		if (friend1.onTheTeam == true || friend2.onTheTeam == true) {
-				scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].joinedZhuang = true
-				scoreBoardData.zhuangJia.teammates.push(scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].name)
-			}
-    		
-    		console.log(friend1, friend2) 
-    	}
-    	console.log(cardHand)
-    	// if everybody has played their last hand, check koudi, add points depending on which team won
-    	if (cardHand.lastRound == true) {
-    		scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].lastRound = true
-    		// add kou di points -- track kou di on server side??? 
-    		// calculate points by team --
-    		var totalPoints = tallyScoreByTeam(scoreBoardData.players)
-    		console.log('final score', totalPoints)
+        // check to see if they played a called card to be on a team if teams arent set yet 
+        if (!teamSet) {
+            // check to see if they're on your team 
+            // (cardsPlayed, cardSought, condition, cardsBefore)
+            var friend1 = areYouOnMyTeam(cardHand.cards, askedFriend1, cardsBefore1)
+            cardsBefore1 = friend1.cardsBefore
+            var friend2 = areYouOnMyTeam(cardHand.cards, askedFriend2, cardsBefore2)
+            cardsBefore2 = friend2.cardsBefore
 
-    		var kouDiPoints = 0
-	    	for(var i = 0; i < kouDiCards.length; i++) {
-	    		kouDiPoints = kouDiPoints + countPoints(kouDiCards[i])
-	    	}
+            if (friend1.onTheTeam == true || friend2.onTheTeam == true) {
+                scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].joinedZhuang = true
+                scoreBoardData.zhuangJia.teammates.push(scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].name)
+            }
+            
+            console.log(friend1, friend2) 
+        }
+        console.log(cardHand)
+        // if everybody has played their last hand, check koudi, add points depending on which team won
+        if (cardHand.lastRound == true) {
+            scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].lastRound = true
+            // add kou di points -- track kou di on server side??? 
+            // calculate points by team --
+            var totalPoints = tallyScoreByTeam(scoreBoardData.players)
+            console.log('final score', totalPoints)
+
+            var kouDiPoints = 0
+            for(var i = 0; i < kouDiCards.length; i++) {
+                kouDiPoints = kouDiPoints + countPoints(kouDiCards[i])
+            }
             // NEED TO DEAL WITH WHO WON THE LAST HAND FOR KOUDI
             // change levels and set zhuangjia 
             if (totalPoints == 0) {
@@ -377,14 +408,15 @@ io.on('connection', function (socket) {
             }
             
             console.log('koudi points', kouDiPoints)
-	    	
-    	} 
+             
+        } 
 
-    	// need to track scores by team once teams are found 
+        // need to track scores by team once teams are found 
 
-
-    	io.emit('updateScore', {scoreBoard: scoreBoardData})
+        io.emit('updateScore', {scoreBoard: scoreBoardData})
         io.emit('cardPlayed', {cards: cardHand.cards, player: cardHand.player, points: pointsInRound});
+    
+    	
     });
 
     socket.on('kouDi', function(discardedCards) {
