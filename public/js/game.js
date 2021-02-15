@@ -25,7 +25,7 @@ function preload ()
 		var cards = []
 		// rename cards b/c can just sort array with sort func b/c treats as string 
 		var suits = ['diamonds', 'spades', 'clubs', 'hearts'];
-		var val = ['zace','2','3','4','5','6','7','8','90','910','jack','queen','rking'];
+		var val = ['2','3','4','5','6','7','8','90','910','jack','queen','rking', 'zace'];
 		for (var i = 0; i < suits.length; i++) {
 			for (var j = 0; j < val.length; j++) {
 				this.load.svg(`${val[j]}_of_${suits[i]}`, `svgs/${val[j]}_of_${suits[i]}.svg`);
@@ -417,7 +417,7 @@ function playHand() {
 	console.log(dropZoneCards)
 	console.log(yourHandList)
 	
-	socket.emit('can I go', playerid)	
+	socket.emit('can I go', {id: playerid, cards: dropZoneCards})	
 }
 
 function clearTable() {
