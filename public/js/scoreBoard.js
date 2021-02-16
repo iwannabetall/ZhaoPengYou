@@ -1,6 +1,6 @@
 var suits = ['diamonds', 'spades', 'clubs', 'hearts'];
 
-var valKey = [{key:'zace', val: 'Ace'}, {key:'rking', val: 'King'}, {key:'910', val: '10'}, {key:'queen', val: 'Queen'}, {key:'jack', val: 'Jack'}, {key:'90', val: '9'}, {key:'8', val: '8'}, {key:'7', val: '7'}, {key:'6', val: '6'}, {key:'5', val: '5'}, {key:'4', val: '4'}, {key:'3', val: '3'}, {key:'2', val: '2'}]
+var valKey = [{key:'sace', val: 'Ace'}, {key:'rking', val: 'King'}, {key:'910', val: '10'}, {key:'queen', val: 'Queen'}, {key:'jack', val: 'Jack'}, {key:'90', val: '9'}, {key:'8', val: '8'}, {key:'7', val: '7'}, {key:'6', val: '6'}, {key:'5', val: '5'}, {key:'4', val: '4'}, {key:'3', val: '3'}, {key:'2', val: '2'}]
 
 var conditions = [{val: "First", key: 'first'}, {val: "Second", key: '2nd'}, {val: "Outside first", key: 'outside_first'}, {val: "Dead", key: 'dead'}, {val: "Third", key: 'third'}]
 

@@ -18,6 +18,8 @@ var config = {
     }
 };
 
+var cardSize = 0.65
+
 var game = new Phaser.Game(config);
 
 function preload ()
@@ -25,12 +27,15 @@ function preload ()
 		var cards = []
 		// rename cards b/c can just sort array with sort func b/c treats as string 
 		var suits = ['diamonds', 'spades', 'clubs', 'hearts'];
-		var val = ['2','3','4','5','6','7','8','90','910','jack','queen','rking', 'zace'];
+		var val = ['2','3','4','5','6','7','8','90','910','jack','queen','rking', 'sace'];
 		for (var i = 0; i < suits.length; i++) {
 			for (var j = 0; j < val.length; j++) {
 				this.load.svg(`${val[j]}_of_${suits[i]}`, `svgs/${val[j]}_of_${suits[i]}.svg`);
 			}
 		}
+		
+		this.load.svg('small_joker', 'svgs/small_joker.svg')
+		this.load.svg('zbig_joker', 'svgs/zbig_joker.svg')
 
 		var avatars = ['charmander_sm', 'squirtle', 'pikachu_sm', 'snorlax', 'psyduck']
 
@@ -167,13 +172,13 @@ function create ()
 		
 		yourHandList.push({card: data.card, deck: data.deck})
 
-		var card = this.add.sprite(400, 200, data.card).setScale(0.5, 0.5).setName(data.card).setInteractive()
+		var card = this.add.sprite(400, 200, data.card).setScale(cardSize, cardSize).setName(data.card).setInteractive()
 		card.setData('card', 'flip')
 
 		var newCard 
 		setTimeout(()=> {
 			card.destroy()
-			newCard = this.add.sprite(30 * data.count + 50, 600, data.card).setScale(0.5, 0.5).setName(`${data.card}${data.deck}`).setInteractive()
+			newCard = this.add.sprite(30 * data.count + 50, 600, data.card).setScale(cardSize, cardSize).setName(`${data.card}${data.deck}`).setInteractive()
 			newCard.setData('card', 'inHand')
 			yourHand.push(newCard)
 		}, 1500)
@@ -317,7 +322,7 @@ function create ()
 	socket.on('send bottom 8', (cards) => {
 		console.log(cards.bottom8Cards)
 		for (var i = 0; i < cards.bottom8Cards.length; i++) {
-			var newCard = this.add.sprite(30 * (cards.numCardsInHand + i) + 50, 600, cards.bottom8Cards[i].card).setScale(0.5, 0.5).setName(`${cards.bottom8Cards[i].card}${cards.bottom8Cards[i].deck}`).setInteractive()
+			var newCard = this.add.sprite(30 * (cards.numCardsInHand + i) + 50, 600, cards.bottom8Cards[i].card).setScale(cardSize, cardSize).setName(`${cards.bottom8Cards[i].card}${cards.bottom8Cards[i].deck}`).setInteractive()
 			newCard.setData('card', 'inHand')
 			yourHand.push(newCard)	
 		}
@@ -345,7 +350,7 @@ function create ()
 		console.log(self, this)
 		for (var i = 0; i < hand.length; i++) {
 			// console.log(hand[i])
-			var card = this.add.sprite(30 * i + x, y, hand[i]).setScale(0.5, 0.5)
+			var card = this.add.sprite(30 * i + x, y, hand[i]).setScale(cardSize, cardSize)
 			cardsPlayed.push(card)
 			// console.log(card)
 		}
@@ -368,7 +373,7 @@ function create ()
 		var gameInfo = data.liangData 
 		currentZhuangId = gameInfo.flippedBy
 		currentZhuang = gameInfo.name
-		var zhu = this.add.sprite(50, 100, gameInfo.zhuCard).setScale(0.3, 0.3).setName(`Zhu${gameInfo.zhuCard}`)
+		var zhu = this.add.sprite(50, 100, gameInfo.zhuCard).setScale(cardSize * 0.7, cardSize * 0.7).setName(`Zhu${gameInfo.zhuCard}`)
 		liangGroup.add(zhu)
 		var zhulabel = this.add.text(50, 20, `Zhu flipped by ${gameInfo.name}`)
 		liangGroup.add(zhulabel)
@@ -447,14 +452,14 @@ function sortHand(cards, currentCardObj, zhuSuit) {
 	// console.log(cardsInHand)
 
 	var zhu = '2'
-	var suits = ['diamonds', 'spades', 'clubs', 'hearts'];
-	var val = ['zace','2','3','4','5','6','7','8','90','910','jack','queen','rking'];
+	var suits = ['diamonds', 'spades', 'hearts', 'clubs'];
+	var val = ['sace','2','3','4','5','6','7','8','90','910','jack','queen','rking'];
 	var sortedHand = []
 
 	for (var i = 0; i < suits.length; i++) {
 		// sort by suit 
 		var cardsBySuit = cardsInHand.filter(x=>x.includes(suits[i]))
-		sortedHand = sortedHand.concat(cardsBySuit.sort())
+		sortedHand = sortedHand.concat(cardsBySuit.sort())	
 	}
 
 	// handle zhu number and jokers
@@ -463,7 +468,7 @@ function sortHand(cards, currentCardObj, zhuSuit) {
 	// console.log(sortedHand)
 
 	for (var i = 0; i < sortedHand.length; i++){
-		self.add.sprite(30 * i + 50, 200, sortedHand[i]).setScale(0.5, 0.5).setName(`${sortedHand[i]}${cardsByDeck[i]}`).setData('card', 'inHand').setInteractive()	
+		self.add.sprite(30 * i + 50, 200, sortedHand[i]).setScale(cardSize, cardSize).setName(`${sortedHand[i]}${cardsByDeck[i]}`).setData('card', 'inHand').setInteractive()	
 	}
 
 	// how do i update yourHandList mid deal w/o missing a card??? --should prob sort server side?? 

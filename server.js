@@ -41,8 +41,8 @@ var numCardsInHand  // how many cards in hand to start
 var kouDiCards
 var bottom8Cards // cards that go to zhuangjia 
 // jiao de pai - track what cards are asked for -- should make it an array of objects case it's 1 or two friends?? !!!TODO
-var askedFriend1 //= 'zace_of_diamonds'
-var askedFriend2 // = 'zace_of_spades'
+var askedFriend1 //= 'sace_of_diamonds'
+var askedFriend2 // = 'sace_of_spades'
 var askedFriend1Condition //= 'First'
 var askedFriend2Condition // = 'First'
 var cardsBefore1 //= 0 // need to track how many of the cards ie Ace of spades have been played to konw if they're on a team -- how many cards of the called card need to be played before theyre on a team -- when it's zero on a played card, theyre on the team 
@@ -51,11 +51,11 @@ var outsideCondition1  // need to track if the zhuang called for outside first, 
 var outsideCondition2
 var teamSet = false
 
-var cardVals = ['2','3','4','5','6','7','8','90','910','jack','queen','rking', 'zace'];
+var cardVals = ['2','3','4','5','6','7','8','90','910','jack','queen','rking', 'sace'];
 
-var cardDeck = ["zace_of_diamonds", "2_of_diamonds", "3_of_diamonds", "4_of_diamonds", "5_of_diamonds", "6_of_diamonds", "7_of_diamonds", "8_of_diamonds", "90_of_diamonds", "910_of_diamonds", "jack_of_diamonds", "queen_of_diamonds", "rking_of_diamonds", "zace_of_spades", "2_of_spades", "3_of_spades", "4_of_spades", "5_of_spades", "6_of_spades", "7_of_spades", "8_of_spades", "90_of_spades", "910_of_spades", "jack_of_spades", "queen_of_spades", "rking_of_spades", "zace_of_clubs", "2_of_clubs", "3_of_clubs", "4_of_clubs", "5_of_clubs", "6_of_clubs", "7_of_clubs", "8_of_clubs", "90_of_clubs", "910_of_clubs", "jack_of_clubs", "queen_of_clubs", "rking_of_clubs", "zace_of_hearts", "2_of_hearts", "3_of_hearts", "4_of_hearts", "5_of_hearts", "6_of_hearts", "7_of_hearts", "8_of_hearts", "90_of_hearts", "910_of_hearts", "jack_of_hearts", "queen_of_hearts", "rking_of_hearts", 'red_joker', 'black_joker']
+var cardDeck = ["sace_of_diamonds", "2_of_diamonds", "3_of_diamonds", "4_of_diamonds", "5_of_diamonds", "6_of_diamonds", "7_of_diamonds", "8_of_diamonds", "90_of_diamonds", "910_of_diamonds", "jack_of_diamonds", "queen_of_diamonds", "rking_of_diamonds", "sace_of_spades", "2_of_spades", "3_of_spades", "4_of_spades", "5_of_spades", "6_of_spades", "7_of_spades", "8_of_spades", "90_of_spades", "910_of_spades", "jack_of_spades", "queen_of_spades", "rking_of_spades", "sace_of_clubs", "2_of_clubs", "3_of_clubs", "4_of_clubs", "5_of_clubs", "6_of_clubs", "7_of_clubs", "8_of_clubs", "90_of_clubs", "910_of_clubs", "jack_of_clubs", "queen_of_clubs", "rking_of_clubs", "sace_of_hearts", "2_of_hearts", "3_of_hearts", "4_of_hearts", "5_of_hearts", "6_of_hearts", "7_of_hearts", "8_of_hearts", "90_of_hearts", "910_of_hearts", "jack_of_hearts", "queen_of_hearts", "rking_of_hearts", 'zbig_joker', 'small_joker']
 
-// var cardDeck = ["zace_of_diamonds", "2_of_diamonds", "90_of_diamonds", "910_of_diamonds", "jack_of_diamonds", "queen_of_diamonds", "rking_of_diamonds", "zace_of_spades", "2_of_spades", "3_of_spades", "4_of_spades", "5_of_spades","90_of_spades", "910_of_spades", "rking_of_spades", "zace_of_clubs", "2_of_clubs", "5_of_clubs","910_of_clubs", "jack_of_clubs", "queen_of_clubs", "rking_of_clubs", "zace_of_hearts", "90_of_hearts", "910_of_hearts", "jack_of_hearts", "queen_of_hearts", "rking_of_hearts"]
+// var cardDeck = ["sace_of_diamonds", "2_of_diamonds", "90_of_diamonds", "910_of_diamonds", "jack_of_diamonds", "queen_of_diamonds", "rking_of_diamonds", "sace_of_spades", "2_of_spades", "3_of_spades", "4_of_spades", "5_of_spades","90_of_spades", "910_of_spades", "rking_of_spades", "sace_of_clubs", "2_of_clubs", "5_of_clubs","910_of_clubs", "jack_of_clubs", "queen_of_clubs", "rking_of_clubs", "sace_of_hearts", "90_of_hearts", "910_of_hearts", "jack_of_hearts", "queen_of_hearts", "rking_of_hearts"]
 
 function generateDecks(decksNeeded) {
 	var fullCardDeck = []	
@@ -83,7 +83,7 @@ function tallyScoreByTeam(scores) {
 
 function convertCardToSVGName(cardVal, suit) {
 	if (cardVal == 'Ace') {
-		cardVal = 'zace'
+		cardVal = 'sace'
 	} else if (cardVal == 'King') {
 		cardVal = 'rking' 
 	} else if (cardVal == "10") {
@@ -174,56 +174,102 @@ function checkIfPatternsMatch(pattern1, pattern2) {
 	return true
 }
 
-function beatHand(originalHand, newHand, trumpCard) {
+function beatHand(originalHand, newHand, biAttempt) {
+	// biAttempt = true if original hand is fu and new hand is all zhu
 	// FOR FU PAI ONLY that match suit - OR IF ALL ZHU??? 
 	// given stats of 2 card hands, find the bigger zhaopengyou hand 
 	// returns true if new hand beats previous high hand 
-	if (originalHand.zimeidui.length > 0) {
+	var patternMatch = checkIfPatternsMatch(originalHand.freq, newHand.freq)
+	
+	// make sure suits match unless it's a biattempt 
+	if (newHand.allSameSuit && Object.keys(newHand.suits) == Object.keys(originalHand.suits)) {
+		var matchingSuit = true
+	}
 
-		// if highest hand was a zimeidui, check to make sure pattern matches 
-		var zimeiduiPatternOK = checkIfPatternsMatch(originalHand.zimeiduiPattern, newHand.zimeiduiPattern)
-		
-		if (zimeiduiPatternOK) {
+	console.log("pattern match status ", patternMatch)
 
-			if (newHand.zimeidui > originalHand.zimeidui){
+	if (matchingSuit || biAttempt) {
+		if (originalHand.zimeidui.length > 0) {
+
+			// if highest hand was a zimeidui, check to make sure pattern matches 
+			var zimeiduiPatternOK = checkIfPatternsMatch(originalHand.zimeiduiPattern, newHand.zimeiduiPattern)
+			
+			if (zimeiduiPatternOK) {
+				// if pattern matches, find higher hand	
+				if (!biAttempt) {
+					if (newHand.zimeidui > originalHand.zimeidui){
+						return true
+					} else {
+						return false
+					}	
+				} else {
+					// if zhu vs fu, return true if pattern matches (***including if they tacked on an ace***)
+					if (patternMatch) {
+						return true
+					} else {
+						console.log('wtf happened here', originalHand.cards)
+						return false
+					}
+				} 
+			} else {
+				return false
+			}
+			
+		} 
+
+		if (originalHand.triples.length > 0) {
+		// if original highest hand is just a triple 
+			if (!biAttempt) {
+				if (newHand.triples > originalHand.triples) {
+					return true
+				} else {
+					return false
+				}	
+			} else if (patternMatch){
+				// if bi attempt and pattern matches
+				return true
+			} else {
+				// don't think this triggers ever 
+				console.log('wtf triple')
+				return false
+			}
+			
+
+		} 
+
+		if (originalHand.pairs.length > 0) {
+		// if original highest hand is just a pair
+			if (!biAttempt) {
+				if (newHand.pairs > originalHand.pairs) {
+					return true
+				} else {
+					return false
+				}	
+			} else if (patternMatch) {
+				// if bi attempt, just need to match the pattern 
 				return true
 			} else {
 				return false
 			}
-		} else {
-			return false
-		}
-		
-	} 
 
-	if (originalHand.triples.length > 0) {
-	// if original highest hand is just a triple 
-		if (newHand.triples > originalHand.triples) {
-			return true
-		} else {
-			return false
-		}
+		} 
 
-	} 
-
-
-	if (originalHand.pairs.length > 0) {
-	// if original highest hand is just a triple 
-		if (newHand.pairs > originalHand.pairs) {
-			return true
-		} else {
-			return false
-		}
-
-	} 
-
-	if (originalHand.singles.length > 0) {
-		if (newHand.singles > originalHand.singles) {
-			return true
-		} else {
-			return false
+		if (originalHand.singles.length > 0) {
+			if (!biAttempt){
+				if (newHand.singles > originalHand.singles) {
+					return true
+				} else {
+					return false
+				}	
+			} else if (patternMatch) {
+				return true
+			} else {
+				return false
+			}
+			
 		}
 	}
+	
 }
 
 
@@ -232,7 +278,7 @@ function getCardStats(cards, trumpCard) {
 	var trumpSuit = trumpCard.split('_')[2]
 	var trumpCardNum = trumpCard.split('_')[0]
 
-	var cardVals = ['2','3','4','5','6','7','8','90','910','jack','queen','rking', 'zace'];
+	var cardVals = ['2','3','4','5','6','7','8','90','910','jack','queen','rking', 'sace'];
 	
 	var cardValsWithoutTrump = cardVals.filter(x=>x != trumpCardNum)
 	
@@ -320,7 +366,6 @@ function getCardStats(cards, trumpCard) {
 		
 
 	}
-
 
 	if (cardStats.trumpCards == cards.length){
 		cardStats.allZhu = true
@@ -543,35 +588,35 @@ io.on('connection', function (socket) {
 
 			var playedStats = getCardStats(cardHand.cards, scoreBoardData.zhuCard)
 
-			// if played one card, just check to see if it's bigger or if it's a zhu card 
-			if (cardHand.cards.length == 1){
-				
-				// if leading hand is all zhu 
-				if (scoreBoardData.highestHand.cardStats.allZhu) {
-					// only higher zhu can beat it -- NEED TO CHECK FOR JOKER AND 
-					if (playedStats.allZhu && cardHand.cards > scoreBoardData.highestHand.cardStats.hand) {
-						console.log('new highest hand is ', cardHand.cards)
+			if (scoreBoardData.highestHand.cardStats.allZhu) {
+				// highest hand is zhu, need to beat the card, but must have zhu 
+				if (playedStats.allZhu) {
+					var newLeader = beatHand(scoreBoardData.highestHand.cardStats, playedStats.cardStats, false)
+					if (newLeader){
+						// if new highest hand, update data 
 						scoreBoardData.highestHand.cardStats = playedStats
 						scoreBoardData.highestHand.playedBy = cardHand.player
 						scoreBoardData.highestHand.cards = cardHand.cards  
-					}  
-				} else if (playedStats.allZhu || cardHand.cards > scoreBoardData.highestHand.cardStats.hand) {
-					console.log('bi le or better card', cardHand.cards)
+					}	
+				}
+				
+			} else {
+				// highest hand is a fu card, need to beat the card if not playing zhu.  if zhu, then can match value (ie both play 3s but diff suit) as long as pattern matches 
+
+				if (playedStats.allZhu) {
+					// attempt to bi
+					var newLeader = beatHand(scoreBoardData.highestHand.cardStats, playedStats.cardStats, true)
+				} else {
+					var newLeader = beatHand(scoreBoardData.highestHand.cardStats, playedStats.cardStats, false)
+				}
+				
+				if (newLeader){
+					// if new highest hand, update data 
 					scoreBoardData.highestHand.cardStats = playedStats
 					scoreBoardData.highestHand.playedBy = cardHand.player
 					scoreBoardData.highestHand.cards = cardHand.cards  
-
-				}
-				
-			} else if (playedStats.allZhu) {
-				// if played more than one card and it's all zhu 
-				
-			} else if (playedStats.allSameSuit && !scoreBoardData.highestHand.cardStats.allZhu){
-				// if not all zhu and highest hand is not zhu, make sure it's the same suit as the highest hand/lead hand 
-				if (playedStats.allSameSuit && Object.keys(playedStats.suits) == Object.keys(scoreBoardData.highestHand.cardStats.suits)) {
-
-				}
-			}
+				}	
+			}			
 
 		}
 		
