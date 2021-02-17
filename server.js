@@ -71,7 +71,7 @@ function generateDecks(decksNeeded) {
 	return fullCardDeck
 }
 
-function tallyScoreByTeam(scores) {
+function tallyScoreByTeam(scores, winner) {
 	// for team not on zhuang jia
 	var totalpts = scores.filter(x=> x.joinedZhuang == false).map(x=>x.points).reduce((acc, curr) => acc + curr, 0)
 	
@@ -182,10 +182,10 @@ function beatHand(originalHand, newHand, biAttempt) {
 	var patternMatch = checkIfPatternsMatch(originalHand.freq, newHand.freq)
 	
 	// make sure suits match unless it's a biattempt 
-	if (newHand.allSameSuit && Object.keys(newHand.suits) == Object.keys(originalHand.suits)) {
+	if (newHand.allSameSuit && Object.keys(newHand.suits)[0] == Object.keys(originalHand.suits)[0]) {
 		var matchingSuit = true
 	}
-
+	console.log('beat hand', newHand)
 	console.log("pattern match status ", patternMatch)
 
 	if (matchingSuit || biAttempt) {
@@ -207,7 +207,6 @@ function beatHand(originalHand, newHand, biAttempt) {
 					if (patternMatch) {
 						return true
 					} else {
-						console.log('wtf happened here', originalHand.cards)
 						return false
 					}
 				} 
@@ -230,11 +229,9 @@ function beatHand(originalHand, newHand, biAttempt) {
 				return true
 			} else {
 				// don't think this triggers ever 
-				console.log('wtf triple')
 				return false
 			}
 			
-
 		} 
 
 		if (originalHand.pairs.length > 0) {
@@ -255,13 +252,13 @@ function beatHand(originalHand, newHand, biAttempt) {
 		} 
 
 		if (originalHand.singles.length > 0) {
-			if (!biAttempt){
+			if (!biAttempt){				
 				if (newHand.singles > originalHand.singles) {
 					return true
 				} else {
 					return false
 				}	
-			} else if (patternMatch) {
+			} else if (patternMatch) {				
 				return true
 			} else {
 				return false
@@ -424,6 +421,7 @@ io.on('connection', function (socket) {
 		scoreBoardData.zhuangJia = {}
 		scoreBoardData.whoseTurn = null 
 		scoreBoardData.highestHand = {}
+		scoreBoardData.highestHand.cards = []
 
 		console.log('reset scoreBoardData', scoreBoardData)
 		
@@ -551,7 +549,7 @@ io.on('connection', function (socket) {
 	socket.on('can I go', function (player) {
 		// check see that it's that player's turn to play their hand, dont let people play out of order		
 		// make sure theyve played the right number of cards 
-		if (player.id == scoreBoardData.whoseTurn && (player.cards.length == scoreBoardData.highestHand.cards.length)) {
+		if (player.id == scoreBoardData.whoseTurn && (player.cards.length == scoreBoardData.highestHand.cards.length || scoreBoardData.highestHand.cards.length == 0)) {
 			socket.emit('play your cards')	
 		} else if (player.cards.length != scoreBoardData.highestHand.cards.length) {
 			// 
@@ -584,14 +582,14 @@ io.on('connection', function (socket) {
 		} else {
 			// for all hands played after the first person
 			// need to make sure that they play either correct suit or zhu pai 
-			var suitOfHighest = scoreBoardData.highestHand.cardStats.allZhu ? 'zhu' : Object.keys(scoreBoardData.highestHand.cardStats.suits)[0]
+			// var suitOfHighest = scoreBoardData.highestHand.cardStats.allZhu ? 'zhu' : Object.keys(scoreBoardData.highestHand.cardStats.suits)[0]
 
 			var playedStats = getCardStats(cardHand.cards, scoreBoardData.zhuCard)
 
 			if (scoreBoardData.highestHand.cardStats.allZhu) {
 				// highest hand is zhu, need to beat the card, but must have zhu 
 				if (playedStats.allZhu) {
-					var newLeader = beatHand(scoreBoardData.highestHand.cardStats, playedStats.cardStats, false)
+					var newLeader = beatHand(scoreBoardData.highestHand.cardStats, playedStats, false)
 					if (newLeader){
 						// if new highest hand, update data 
 						scoreBoardData.highestHand.cardStats = playedStats
@@ -605,9 +603,11 @@ io.on('connection', function (socket) {
 
 				if (playedStats.allZhu) {
 					// attempt to bi
-					var newLeader = beatHand(scoreBoardData.highestHand.cardStats, playedStats.cardStats, true)
+					var newLeader = beatHand(scoreBoardData.highestHand.cardStats, playedStats, true)
 				} else {
-					var newLeader = beatHand(scoreBoardData.highestHand.cardStats, playedStats.cardStats, false)
+					// regular card play
+					console.log('regular card play')
+					var newLeader = beatHand(scoreBoardData.highestHand.cardStats, playedStats, false)
 				}
 				
 				if (newLeader){
@@ -620,34 +620,52 @@ io.on('connection', function (socket) {
 
 		}
 		
-		if (scoreBoardData.players.filter(x=>x.playedHand == true).length = scoreBoardData.players.length) {
-			//everybody has played a hand, determine winner of round and set who's playing first
 
-		}
-
-
-		if (turn + 1 > scoreBoardOrder.length - 1) {
-			// check if it's the last one in order 
-			turn = 0
-			scoreBoardData.whoseTurn = scoreBoardData.players[turn].id
-		} else {
-			// else next person in line 
-			turn = turn + 1
-			scoreBoardData.whoseTurn = scoreBoardData.players[turn].id
-		}
-
-		console.log('play', cardHand)
-		console.log('playhand scoreBoard', scoreBoardData)
-		
 		for (var i = 0; i < cardHand.cards.length; i++) { 
 			pointsInRound = pointsInRound + countPoints(cardHand.cards[i])
 		}
+
 		var hand = {}
 		hand.player = cardHand.player
 		hand.cards = cardHand.cards
 		cardHistory.push(hand)	  
 		roundHistory.points = pointsInRound
-		roundHistory.cards = cardHistory
+		roundHistory.cardHistory = cardHistory
+
+		var pts = tallyScoreByTeam(scoreBoardData.players)
+		console.log(pts)
+
+		if (scoreBoardData.players.filter(x=>x.playedHand == true).length == scoreBoardData.players.length) {
+			//everybody has played a hand, determine winner of round and set who's playing first
+			var winnerID = scoreBoardData.highestHand.playedBy
+			
+			scoreBoardData.whoseTurn = winnerID
+			console.log('winner ', winnerID)
+
+
+			var scoreBoardOrder = scoreBoardData.players.map(x => x.id)
+
+			scoreBoardData.players[scoreBoardOrder.indexOf(winnerID)].points = scoreBoardData.players[scoreBoardOrder.indexOf(winnerID)].points + pointsInRound
+
+			gameHistory.push(roundHistory)
+			
+		} else {
+			console.log("update turn info ", turn)
+			if (turn + 1 > scoreBoardOrder.length - 1) {
+				// check if it's the last one in order 
+				turn = 0
+				scoreBoardData.whoseTurn = scoreBoardData.players[turn].id
+			} else {
+				// else next person in line 
+				turn = turn + 1
+				scoreBoardData.whoseTurn = scoreBoardData.players[turn].id
+			}	// 
+
+		}
+
+		console.log('play', cardHand)
+		console.log('playhand scoreBoard', scoreBoardData)
+		
 		// roundHistory = roundHistory.concat(hand)
 
 		// check to see if they played a called card to be on a team if teams arent set yet 
@@ -736,16 +754,20 @@ io.on('connection', function (socket) {
 	socket.on('clearRound', function() {
 		// calculate number of points in the round and who won the points 
 		console.log('clear round', roundHistory, pointsInRound)
-		gameHistory.push(roundHistory)
+		// gameHistory.push(roundHistory)
 		// console.log('clearRound', data)
 		// tell what cards were played that round
 		io.emit('clearTable')
 
+		scoreBoardData.highestHand = {}
+		scoreBoardData.highestHand.cards = []
 
 		// reset round data 
 		pointsInRound = 0
 		roundHistory = {}
 		cardHistory = []
+		scoreBoardData.players.forEach(x=> x.playedHand = false)
+
 	})
 
 	socket.on('disconnect', function () {
