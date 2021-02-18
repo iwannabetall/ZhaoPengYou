@@ -14,7 +14,8 @@ var config = {
     },
     scene: {
         preload: preload,
-        create: create
+        create: create,
+        update: update
     }
 };
 
@@ -45,6 +46,21 @@ function preload ()
 
 }
 
+function update() {
+
+	// L/R arrows slide card hand across screen 
+	// TODO - MAKE SURE TO STOP IF REACH END OF HAND 
+	 if (cursors.left.isDown || cursors.up.isDown)
+    {
+        cardHandContainer.x += 6
+    }
+    else if (cursors.right.isDown || cursors.down.isDown)
+    {
+     	cardHandContainer.x -= 6
+    }
+
+}
+
 var dropZoneCardsTracker = []  // svg names of cards played -- tracks unique cards ie from which deck 
 // should dropZoneCardsTracker be an array of objects???!  going to make it 2 sep arrays b/c it's easier to filter 
 var dropZoneCards = [] 
@@ -66,7 +82,9 @@ var gameStarted = false  //
 var zhuangJia // if not set, ask if theyre ok with X as it 
 var currentZhuang
 var currentZhuangId
-
+var zhuCard //set zhu suit
+var cursors
+var cardHandContainer
 
 socket.on('playerid', function(id){	
 	playerid = id
@@ -75,9 +93,26 @@ socket.on('playerid', function(id){
 function create ()
     {
 
+    cursors = this.input.keyboard.createCursorKeys();
+
 	var avatars = ['charmander_sm', 'squirtle', 'pikachu_sm', 'snorlax', 'psyduck']
 	var avatarGroup = this.add.group()  // need groups as global vars 
 	var liangGroup = this.add.group()
+	cardHandContainer = this.add.container(40, 200)
+	cardHandContainer.setInteractive()
+	// cardHandContainer.setInteractive({draggable: true, hitArea: cardHandContainer})
+
+	// 	// this.input.setDraggable(cardHandContainer)
+
+	// this.input.on('drag', function (pointer, gameObject, dragX, dragY) {
+
+	// 	gameObject.setInteractive({draggable: true, hitArea: cardHandContainer})
+
+ //        gameObject.x = dragX;
+ //        gameObject.y = dragY;
+
+ //    });
+
 
 	for (var i = 0; i < avatars.length; i++) {
 		var seatPlacement = this.add.image(100 + i * 170,100, avatars[i]).setInteractive()
@@ -175,12 +210,14 @@ function create ()
 		var card = this.add.sprite(400, 200, data.card).setScale(cardSize, cardSize).setName(data.card).setInteractive()
 		card.setData('card', 'flip')
 
+
 		var newCard 
 		setTimeout(()=> {
 			card.destroy()
 			newCard = this.add.sprite(30 * data.count + 50, 600, data.card).setScale(cardSize, cardSize).setName(`${data.card}${data.deck}`).setInteractive()
 			newCard.setData('card', 'inHand')
 			yourHand.push(newCard)
+			cardHandContainer.add(newCard)  // can also pass as array
 		}, 1500)
 			
         // yourHand.add(card)
@@ -192,6 +229,11 @@ function create ()
         // this.input.setDraggable(card);
 	})
 	
+
+	this.input.keyboard.on('keydown', function(e) {
+
+	})
+
 	this.input.on('gameobjectdown', function (pointer, gameObject) {
 		console.log(gameObject.getData('type') )
 		
@@ -272,6 +314,8 @@ function create ()
 	this.input.on('gameobjectup', function (pointer, gameObject) {
 		gameObject.clearTint()
 	})
+
+
 	// let dropZone = this.add.zone(700, 375, 900, 250).setRectangleDropZone(900, 250);
  //    dropZone.setData({ cards: 0 });
 
@@ -377,6 +421,9 @@ function create ()
 		liangGroup.add(zhu)
 		var zhulabel = this.add.text(50, 20, `Zhu flipped by ${gameInfo.name}`)
 		liangGroup.add(zhulabel)
+
+		zhuCard = data.liangData.zhuCard  // set this for sorting purposes
+		console.log(zhuCard)
 		// console.log(liangGroup.length)
 		// console.log(liangGroup.children.entries.length)
 		// console.log(liangGroup.getLength())
@@ -443,32 +490,54 @@ function startCardDraw() {
 	console.log('it works')
 }
 
-function sortHand(cards, currentCardObj, zhuSuit) {
+function sortHand(cards, currentCardObj) {
 
 	// pass zhu in as parameter 
 	yourHand.forEach((card)=> card.destroy())
 	var cardsInHand = yourHandList.map(x=> x.card)
 	var cardsByDeck = yourHandList.map(x=> x.deck)
 	// console.log(cardsInHand)
-
-	var zhu = '2'
 	var suits = ['diamonds', 'spades', 'hearts', 'clubs'];
-	var val = ['sace','2','3','4','5','6','7','8','90','910','jack','queen','rking'];
-	var sortedHand = []
+	
+	// if zhu is set, sort according to zhu 
+	if (zhuCard) {
+		// sort so that blacks/red suits arent next to each other?? 
+		var zhuSuit = zhuCard.split('_')[2]	
+		suits = suits.filter(x => x != zhuSuit)
+		suits.push(zhuSuit)
 
+		// deal with separating zhu card from regular cards
+		var zhuNums = cardsInHand.filter(x=> x.includes(zhuCard.split('_')[0]))
+		var theZhuNum = zhuNums.filter(x=> x.includes(zhuSuit))  // concatenate before jokers 
+		zhuNums = zhuNums.filter(x=> !x.includes(zhuSuit)).sort()
+		zhuNums = zhuNums.concat(theZhuNum)
+
+	}
+		
+	var sortedHand = []
+	
 	for (var i = 0; i < suits.length; i++) {
 		// sort by suit 
 		var cardsBySuit = cardsInHand.filter(x=>x.includes(suits[i]))
+		// remove zhu card 
+		if (zhuCard) {
+			cardsBySuit = cardsBySuit.filter(x=> !x.includes(zhuCard.split('_')[0]))
+		}
 		sortedHand = sortedHand.concat(cardsBySuit.sort())	
 	}
 
+
 	// handle zhu number and jokers
 	var jokers = cardsInHand.filter(x=>x.includes('joker'))
-	sortedHand = sortedHand.concat(jokers)
+	if (zhuCard) {
+		sortedHand = sortedHand.concat(zhuNums)
+	}
+	sortedHand = sortedHand.concat(jokers.sort())
 	// console.log(sortedHand)
 
 	for (var i = 0; i < sortedHand.length; i++){
-		self.add.sprite(30 * i + 50, 200, sortedHand[i]).setScale(cardSize, cardSize).setName(`${sortedHand[i]}${cardsByDeck[i]}`).setData('card', 'inHand').setInteractive()	
+		var sortedCard = self.add.sprite(30 * i + 50, 200, sortedHand[i]).setScale(cardSize, cardSize).setName(`${sortedHand[i]}${cardsByDeck[i]}`).setData('card', 'inHand').setInteractive()
+		cardHandContainer.add(sortedCard)
 	}
 
 	// how do i update yourHandList mid deal w/o missing a card??? --should prob sort server side?? 
