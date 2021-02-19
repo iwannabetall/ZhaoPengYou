@@ -244,24 +244,24 @@ function create ()
 			socket.emit('avatar', {avatar: gameObject.texture.key, id: playerid})
 		}
 
-		// when clicking avatars to select who won 
-		if (gameObject.getData('type') == 'playingPic') {
-			var winner = gameObject.getData('id')
-			avatarBoxGroup.setVisible(false)
-			console.log(avatarBoxGroup.getChildren(), avatarBoxGroup.length)
-			var avatarBorders = avatarBoxGroup.getChildren()
+		// // when clicking avatars to select who won 
+		// if (gameObject.getData('type') == 'playingPic') {
+		// 	var winner = gameObject.getData('id')
+		// 	avatarBoxGroup.setVisible(false)
+		// 	console.log(avatarBoxGroup.getChildren(), avatarBoxGroup.length)
+		// 	var avatarBorders = avatarBoxGroup.getChildren()
 			
-			for (var i = 0; i<avatarBorders.length; i++) {				
-				console.log(avatarBorders[i].getData('id'))
-				if (avatarBorders[i].getData('id') == winner){
-					avatarBorders[i].setVisible(true)
-				}
-			}
+		// 	for (var i = 0; i<avatarBorders.length; i++) {				
+		// 		console.log(avatarBorders[i].getData('id'))
+		// 		if (avatarBorders[i].getData('id') == winner){
+		// 			avatarBorders[i].setVisible(true)
+		// 		}
+		// 	}
 			
-			// need to eventually check to see that everybody has played before letting people click 
-			socket.emit('round winner', {id: winner})
+		// 	// need to eventually check to see that everybody has played before letting people click 
+		// 	socket.emit('round winner', {id: winner})
 
-		}
+		// }
 		// need to check if it's a card b/c will also trigger for clicked text
 	    if(gameObject.type == "Sprite" && gameObject.getData('card') == 'inHand') {
 	    	gameObject.setTint(0xff0000)
@@ -443,6 +443,10 @@ function create ()
 		console.log(data)
 	})
 
+	socket.on('error', (msg) => {
+		console.log(msg)
+	})
+
 	socket.on('play your cards', () => {
 		var lastRound = false
 		for (var i = 0; i < dropZoneCards.length; i++) {
@@ -455,7 +459,7 @@ function create ()
 		}
 
 		dropZoneCardsSprites.forEach((card)=> card.destroy())
-		socket.emit("playHand", {cards: dropZoneCards, player: playerid, lastRound: lastRound});
+		socket.emit("playHand", {cards: dropZoneCards, player: playerid, lastRound: lastRound, remainingCards: yourHandList});
 	
 		// tell server what we're playing to tell everybody else
 		dropZoneCardsTracker = []

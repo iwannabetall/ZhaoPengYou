@@ -306,6 +306,8 @@ function getCardStats(cards, trumpCard) {
 		// check to see if matching suit or all trump cards -- undefined = joker 
 		if (s == undefined || s == trumpSuit || cards[i].includes(trumpCardNum)) {
 			cardStats.trumpCards = cardStats.trumpCards + 1
+
+			// deal with trump eg if fu zhu 8 or zhu 8 -- append u or t to make it sort 
 			if (cards[i].includes(trumpCardNum)){
 				if (s == trumpSuit) {
 					// rename card b/c it's zhu 8					
@@ -316,7 +318,7 @@ function getCardStats(cards, trumpCard) {
 				}
 			}
 		} else if (!cardStats.suits[s]) {
-			console.log('no joker, new suit') 
+			// console.log('no joker, new suit') 
 			cardStats.suits[s] = 1
 		} else if (s != undefined) {
 			// make sure not joker 
@@ -350,42 +352,7 @@ function getCardStats(cards, trumpCard) {
 	if (cardStats.pairs.length > 1 || cardStats.triples.length > 1) {
 		var zimeidui = cardStats.pairs.concat(cardStats.triples).sort()
 		var zimeiduiVals = []
-		for (var i = 0; i < zimeidui.length - 1; i++){
-				
-			// deal with trump eg if fu zhu 8 or zhu 8
-			// if (zimeidui[i].split('_')[0] == trumpCardNum){
-			// 	if (zimeidui[i].split('_')[2] == trumpSuit) {
-			// 		// rename card b/c it's zhu 8
-			// 		var ind1 = cardValsWithoutTrump.indexOf(`u${zimeidui[i].split('_')[0]}`)
-			// 		var cardName1 = `u${zimeidui[i]}`
-			// 	} else {
-			// 		// fu zhu 
-			// 		var ind1 = cardValsWithoutTrump.indexOf(`t${zimeidui[i].split('_')[0]}`)
-			// 		var cardName1 = `t${zimeidui[i]}`
-			// 	}
-				
-			// } else {
-			// 	var ind1 = cardValsWithoutTrump.indexOf(zimeidui[i].split('_')[0])
-			// 	var cardName1 = zimeidui[i]
-			// }
-
-			// if (zimeidui[i+1].split('_')[0] == trumpCardNum){
-			// 	if (zimeidui[i+1].split('_')[2] == trumpSuit) {
-			// 		// rename card b/c it's zhu 8
-			// 		var ind2 = cardValsWithoutTrump.indexOf(`u${zimeidui[i+1].split('_')[0]}`)	
-			// 		var cardName2 = `u${zimeidui[i]}`
-			// 	} else {
-			// 		// fu zhu 
-			// 		var ind2 = cardValsWithoutTrump.indexOf(`t${zimeidui[i+1].split('_')[0]}`)
-			// 		var cardName2 = `t${zimeidui[i]}`
-			// 	}
-				
-			// } else {
-			// 	var ind2 = cardValsWithoutTrump.indexOf(zimeidui[i+1].split('_')[0])
-			// 	var cardName2 = zimeidui[i+1]
-			// }
-
-			// var dist = ind2 - ind1
+		for (var i = 0; i < zimeidui.length - 1; i++){				
 
 			var dist = cardValsWithoutTrump.indexOf(zimeidui[i+1].split('_')[0]) - cardValsWithoutTrump.indexOf(zimeidui[i].split('_')[0])
 
@@ -412,7 +379,6 @@ function getCardStats(cards, trumpCard) {
 			cardStats.zimeiduiPattern.push(cardStats.cards[cardStats.zimeidui[j]])
 		}
 		
-
 	}
 
 	if (cardStats.trumpCards == cards.length){
@@ -446,6 +412,25 @@ function areYouOnMyTeam(cardsPlayed, cardSought, cardsBefore) {
 	return {cardsBefore: cardsBefore, onTheTeam: onTheTeam}
 }
 
+function updateWhoseTurn(gameData, playerid) {
+	// need to determine end of round and reset turn tracker
+	var scoreBoardOrder = gameData.players.map(x => x.id)
+	// update whose turn it is 
+	var turn = scoreBoardOrder.indexOf(playerid)
+	gameData.players[turn].playedHand = true
+
+	if (turn + 1 > scoreBoardOrder.length - 1) {
+		// check if it's the last one in order 
+		turn = 0
+		gameData.whoseTurn = gameData.players[turn].id
+	} else {
+		// else next person in line 
+		turn = turn + 1
+		gameData.whoseTurn = gameData.players[turn].id
+	}	// 
+	return gameData
+}
+
 io.on('connection', function (socket) {
 
 	console.log('A user connected: ' + socket.id);
@@ -471,6 +456,7 @@ io.on('connection', function (socket) {
 		scoreBoardData.players = playerInfo
 		scoreBoardData.zhuangJia = {}
 		scoreBoardData.whoseTurn = null 
+		scoreBoardData.firstSuit = null // what was the suit of the first played hand 
 		scoreBoardData.highestHand = {}
 		scoreBoardData.highestHand.cards = []
 
@@ -512,7 +498,7 @@ io.on('connection', function (socket) {
 				cardCount = cardCount + 1
 			}
 			var whichPlayer = cardInd % players.length
-			console.log('deal', shuffledCards[cardInd].card)
+			// console.log('deal', shuffledCards[cardInd].card)
 			io.to(players[whichPlayer]).emit('deal', {card: shuffledCards[cardInd].card, deck:  shuffledCards[cardInd].deck, count: cardCount});
 			cardInd = cardInd + 1
 		}
@@ -583,24 +569,26 @@ io.on('connection', function (socket) {
 		io.emit('jiao', data)
 	})
 
-	socket.on('round winner', function(data){
-		// record who won the round 
-		roundHistory.winner = data.id
-		// make sure at least two people clicked the same person before give them points
-		var scoreBoardOrder = scoreBoardData.players.map(x => x.id)
+	// socket.on('round winner', function(data){
+	// 	// record who won the round 
+	// 	roundHistory.winner = data.id
+	// 	// make sure at least two people clicked the same person before give them points
+	// 	var scoreBoardOrder = scoreBoardData.players.map(x => x.id)
 
-		scoreBoardData.players[scoreBoardOrder.indexOf(data.id)].points = scoreBoardData.players[scoreBoardOrder.indexOf(data.id)].points + pointsInRound
+	// 	scoreBoardData.players[scoreBoardOrder.indexOf(data.id)].points = scoreBoardData.players[scoreBoardOrder.indexOf(data.id)].points + pointsInRound
 
-		var pts = tallyScoreByTeam(scoreBoardData.players)		
-		console.log(pts)
+	// 	var pts = tallyScoreByTeam(scoreBoardData.players)		
+	// 	console.log(pts)
 
-		io.emit('updateScore', {scoreBoard: scoreBoardData})
-	})
+	// 	io.emit('updateScore', {scoreBoard: scoreBoardData})
+	// })
 
 	socket.on('can I go', function (player) {
 		// check see that it's that player's turn to play their hand, dont let people play out of order		
 		// make sure theyve played the right number of cards 
 		if (player.id == scoreBoardData.whoseTurn && (player.cards.length == scoreBoardData.highestHand.cards.length || scoreBoardData.highestHand.cards.length == 0)) {
+						
+			console.log(scoreBoardData.zhuCard, player)
 			socket.emit('play your cards')	
 		} else if (player.cards.length != scoreBoardData.highestHand.cards.length) {
 			// 
@@ -615,28 +603,79 @@ io.on('connection', function (socket) {
 		// need to determine 3 main things - whose turn it is, are they joining a team, is it the end of the game
 		// server needs to keep track of what cards are played in a round and who plays it so we can clear the hand later / track for history	 	
 		//array of objects w/keys where user is the key and cards is the value
-		
-		// need to determine end of round and reset turn tracker
-		var scoreBoardOrder = scoreBoardData.players.map(x => x.id)			 
-		// update whose turn it is 
-		var turn = scoreBoardOrder.indexOf(cardHand.player)
-		scoreBoardData.players[turn].playedHand = true
-		
-		
-		if (scoreBoardData.players.filter(x=>x.playedHand == true).length == 1) {
+		var followedSuit = false
+
+		if (scoreBoardData.players.filter(x=>x.playedHand == true).length == 0) {
 			// first person played, set them as highest hand
 			// first play has to be all the same suit 
 			scoreBoardData.highestHand.playedBy = cardHand.player
 			scoreBoardData.highestHand.cards = cardHand.cards.sort()
 			scoreBoardData.highestHand.cardStats = getCardStats(cardHand.cards, scoreBoardData.zhuCard)
+				
+			// set what leading suit is to make sure ppl follow suit later
+			var firstSuit = scoreBoardData.highestHand.cardStats.allZhu ? 'zhu' : Object.keys(scoreBoardData.highestHand.cardStats.suits)[0]
+			scoreBoardData.firstSuit = firstSuit
+			
+			// update turn info 
+			scoreBoardData = updateWhoseTurn(scoreBoardData, cardHand.player)
+
+			// check to see if they played a called card to be on a team if teams arent set yet NEED TO CLEAN THIS UP.  COPIED TWICE - TODO
+			if (!teamSet) {
+				// check to see if they're on your team 
+				// (cardsPlayed, cardSought, condition, cardsBefore)
+				var friend1 = areYouOnMyTeam(cardHand.cards, askedFriend1, cardsBefore1)
+				cardsBefore1 = friend1.cardsBefore
+				var friend2 = areYouOnMyTeam(cardHand.cards, askedFriend2, cardsBefore2)
+				cardsBefore2 = friend2.cardsBefore
+
+				if (friend1.onTheTeam == true || friend2.onTheTeam == true) {
+					scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].joinedZhuang = true
+					scoreBoardData.zhuangJia.teammates.push(scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].name)
+				}
+				
+				console.log(friend1, friend2) 
+			}
+
+			io.emit('updateScore', {scoreBoard: scoreBoardData})
+			io.emit('cardPlayed', {cards: cardHand.cards, player: cardHand.player, points: pointsInRound});	
 
 		} else {
 			// for all hands played after the first person
-			// need to make sure that they play either correct suit or zhu pai 
-			// var suitOfHighest = scoreBoardData.highestHand.cardStats.allZhu ? 'zhu' : Object.keys(scoreBoardData.highestHand.cardStats.suits)[0]
-
+			// need to make sure that they play either correct suit or zhu pai or are out of suit if they play zhu pai 
+			// check that they followed suit or dont have that suit if theyre not going first 			
+			
 			var playedStats = getCardStats(cardHand.cards, scoreBoardData.zhuCard)
+			var remainingCardStats = getCardStats(cardHand.remainingCards.map(x=>x.card), scoreBoardData.zhuCard)
 
+
+			if (playedStats.allZhu && scoreBoardData.firstSuit != 'zhu') {
+				// make sure that they're out of cards of the suit theyre supposed to play if theyre trying to bi
+				followedSuit = cardHand.remainingCards.map(x=>x.card.split('_')[2]).filter(x=>x == scoreBoardData.firstSuit).length == 0 ? true : false
+
+				var errMsg = !followedSuit ? `You cannot bi while you still have ${scoreBoardData.firstSuit} in your hand.` : ''
+				console.log('bi attempt ok? ', followedSuit)
+			} else if (!playedStats.allZhu && scoreBoardData.firstSuit == 'zhu') {
+				// if they lead wit zhu, make sure they dont have zhu left 		
+				followedSuit = remainingCardStats.trumpCards == 0 ? true : false
+				var errMsg = !followedSuit ? "Check your hand and play a trump card. Diao Zhu." : ''
+				console.log('out of zhu', followedSuit)
+			} else if (playedStats.allZhu && scoreBoardData.firstSuit == 'zhu'){
+				// leading suit is fu card, just check if suit matches 
+				followedSuit = true
+				console.log('lead with zhu', followedSuit)
+			} else if (scoreBoardData.firstSuit != 'zhu'){
+				// you either follow suit or are out of the suit 
+				followedSuit = playedStats.suits[scoreBoardData.firstSuit] == scoreBoardData.firstSuit ? true : !remainingCardStats.suits[scoreBoardData.firstSuit] ? true : false
+								
+				var errMsg = !followedSuit ? `Check your hand and play your ${scoreBoardData.firstSuit}` : ''
+
+				console.log('regular card play follow suit? ', followedSuit)
+			}
+
+		}
+
+		// for non round leading hands, check to see whose is higher
+		if (followedSuit) {
 			if (scoreBoardData.highestHand.cardStats.allZhu) {
 				// highest hand is zhu, need to beat the card, but must have zhu 
 				if (playedStats.allZhu) {
@@ -667,130 +706,143 @@ io.on('connection', function (socket) {
 					scoreBoardData.highestHand.playedBy = cardHand.player
 					scoreBoardData.highestHand.cards = cardHand.cards  
 				}	
-			}			
+			}
 
-		}
-		
+			for (var i = 0; i < cardHand.cards.length; i++) { 
+				pointsInRound = pointsInRound + countPoints(cardHand.cards[i])
+			}
 
-		for (var i = 0; i < cardHand.cards.length; i++) { 
-			pointsInRound = pointsInRound + countPoints(cardHand.cards[i])
-		}
+			var hand = {}
+			hand.player = cardHand.player
+			hand.cards = cardHand.cards
+			cardHistory.push(hand)	  
+			roundHistory.points = pointsInRound
+			roundHistory.cardHistory = cardHistory
 
-		var hand = {}
-		hand.player = cardHand.player
-		hand.cards = cardHand.cards
-		cardHistory.push(hand)	  
-		roundHistory.points = pointsInRound
-		roundHistory.cardHistory = cardHistory
+			var pts = tallyScoreByTeam(scoreBoardData.players)
+			console.log(pts)
 
-		var pts = tallyScoreByTeam(scoreBoardData.players)
-		console.log(pts)
+			// // need to determine end of round and reset turn tracker
+			// var scoreBoardOrder = scoreBoardData.players.map(x => x.id)			 
+			// // update whose turn it is 
+			// var turn = scoreBoardOrder.indexOf(cardHand.player)
+			// scoreBoardData.players[turn].playedHand = true
 
-		if (scoreBoardData.players.filter(x=>x.playedHand == true).length == scoreBoardData.players.length) {
-			//everybody has played a hand, determine winner of round and set who's playing first
-			var winnerID = scoreBoardData.highestHand.playedBy
+			if (scoreBoardData.players.filter(x=>x.playedHand == true).length == scoreBoardData.players.length) {
+				//everybody has played a hand, determine winner of round and set who's playing first
+				var winnerID = scoreBoardData.highestHand.playedBy
+				
+				scoreBoardData.whoseTurn = winnerID
+				console.log('winner ', winnerID)
+
+
+				var scoreBoardOrder = scoreBoardData.players.map(x => x.id)
+
+				scoreBoardData.players[scoreBoardOrder.indexOf(winnerID)].points = scoreBoardData.players[scoreBoardOrder.indexOf(winnerID)].points + pointsInRound
+
+				gameHistory.push(roundHistory)
+				
+			} else {
+				
+				scoreBoardData = updateWhoseTurn(scoreBoardData, cardHand.player)
+				// // need to determine end of round and reset turn tracker
+				// var scoreBoardOrder = scoreBoardData.players.map(x => x.id)			 
+				// // update whose turn it is 
+				// var turn = scoreBoardOrder.indexOf(cardHand.player)
+				// scoreBoardData.players[turn].playedHand = true
 			
-			scoreBoardData.whoseTurn = winnerID
-			console.log('winner ', winnerID)
+				// if (turn + 1 > scoreBoardOrder.length - 1) {
+				// 	// check if it's the last one in order 
+				// 	turn = 0
+				// 	scoreBoardData.whoseTurn = scoreBoardData.players[turn].id
+				// } else {
+				// 	// else next person in line 
+				// 	turn = turn + 1
+				// 	scoreBoardData.whoseTurn = scoreBoardData.players[turn].id
+				// }	// 
 
+			}
 
-			var scoreBoardOrder = scoreBoardData.players.map(x => x.id)
-
-			scoreBoardData.players[scoreBoardOrder.indexOf(winnerID)].points = scoreBoardData.players[scoreBoardOrder.indexOf(winnerID)].points + pointsInRound
-
-			gameHistory.push(roundHistory)
+			// console.log('play', cardHand)
+			console.log('playhand scoreBoard', scoreBoardData)
 			
+			// roundHistory = roundHistory.concat(hand)
+
+			// check to see if they played a called card to be on a team if teams arent set yet 
+			if (!teamSet) {
+				// check to see if they're on your team 
+				// (cardsPlayed, cardSought, condition, cardsBefore)
+				var friend1 = areYouOnMyTeam(cardHand.cards, askedFriend1, cardsBefore1)
+				cardsBefore1 = friend1.cardsBefore
+				var friend2 = areYouOnMyTeam(cardHand.cards, askedFriend2, cardsBefore2)
+				cardsBefore2 = friend2.cardsBefore
+
+				if (friend1.onTheTeam == true || friend2.onTheTeam == true) {
+					scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].joinedZhuang = true
+					scoreBoardData.zhuangJia.teammates.push(scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].name)
+				}
+				
+				console.log(friend1, friend2) 
+			}
+
+			// if everybody has played their last hand, check koudi, add points depending on which team won
+			if (cardHand.lastRound == true) {
+				scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].lastRound = true
+				// add kou di points -- track kou di on server side??? 
+				// calculate points by team --
+				var totalPoints = tallyScoreByTeam(scoreBoardData.players)
+				console.log('final score', totalPoints)
+
+				var kouDiPoints = 0
+				for(var i = 0; i < kouDiCards.length; i++) {
+					kouDiPoints = kouDiPoints + countPoints(kouDiCards[i])
+				}
+				// NEED TO DEAL WITH WHO WON THE LAST HAND FOR KOUDI
+				// change levels and set zhuangjia 
+				if (totalPoints == 0) {
+					// zhuangjia goes up 3 
+					scoreBoardData.players.filter(x=> x.joinedZhuang == true).map(x => x.level = x.level + 3)
+
+				} else if (totalPoints < 60) {
+					//zhuang jia team goes up 2 levels 
+					scoreBoardData.players.filter(x=> x.joinedZhuang == true).map(x => x.level = x.level + 2)
+
+
+				} else if (totalPoints < 110) {
+					//zhuang jia team goes up 1 level
+					scoreBoardData.players.filter(x=> x.joinedZhuang == true).map(x => x.level = x.level + 1)
+
+
+				} else if (totalPoints < 160) {
+					// between 110-160, shangtai 
+					
+
+				} else if (totalPoints < 210) {
+					//between 160 and 210, go up one, switch zhuangjia sides 
+					scoreBoardData.players.filter(x=> x.joinedZhuang == false).map(x => x.level = x.level + 1)
+
+				} else if (totalPoints < 260) {
+					// btwn 210-260, zhuangjia flips, team goes up 2 levels 
+					scoreBoardData.players.filter(x=> x.joinedZhuang == false).map(x => x.level = x.level + 2)
+					
+				} else {
+					// 260+, go up 3 levels 
+					scoreBoardData.players.filter(x=> x.joinedZhuang == false).map(x => x.level = x.level + 3)
+
+				}
+				
+				console.log('koudi points', kouDiPoints)
+				 
+			} 
+
+			// need to track scores by team once teams are found 
+
+			io.emit('updateScore', {scoreBoard: scoreBoardData})
+			io.emit('cardPlayed', {cards: cardHand.cards, player: cardHand.player, points: pointsInRound});			
 		} else {
-			console.log("update turn info ", turn)
-			if (turn + 1 > scoreBoardOrder.length - 1) {
-				// check if it's the last one in order 
-				turn = 0
-				scoreBoardData.whoseTurn = scoreBoardData.players[turn].id
-			} else {
-				// else next person in line 
-				turn = turn + 1
-				scoreBoardData.whoseTurn = scoreBoardData.players[turn].id
-			}	// 
-
+			io.to(cardHand.player).emit('error', errMsg)
 		}
 
-		console.log('play', cardHand)
-		console.log('playhand scoreBoard', scoreBoardData)
-		
-		// roundHistory = roundHistory.concat(hand)
-
-		// check to see if they played a called card to be on a team if teams arent set yet 
-		if (!teamSet) {
-			// check to see if they're on your team 
-			// (cardsPlayed, cardSought, condition, cardsBefore)
-			var friend1 = areYouOnMyTeam(cardHand.cards, askedFriend1, cardsBefore1)
-			cardsBefore1 = friend1.cardsBefore
-			var friend2 = areYouOnMyTeam(cardHand.cards, askedFriend2, cardsBefore2)
-			cardsBefore2 = friend2.cardsBefore
-
-			if (friend1.onTheTeam == true || friend2.onTheTeam == true) {
-				scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].joinedZhuang = true
-				scoreBoardData.zhuangJia.teammates.push(scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].name)
-			}
-			
-			console.log(friend1, friend2) 
-		}
-
-		// if everybody has played their last hand, check koudi, add points depending on which team won
-		if (cardHand.lastRound == true) {
-			scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].lastRound = true
-			// add kou di points -- track kou di on server side??? 
-			// calculate points by team --
-			var totalPoints = tallyScoreByTeam(scoreBoardData.players)
-			console.log('final score', totalPoints)
-
-			var kouDiPoints = 0
-			for(var i = 0; i < kouDiCards.length; i++) {
-				kouDiPoints = kouDiPoints + countPoints(kouDiCards[i])
-			}
-			// NEED TO DEAL WITH WHO WON THE LAST HAND FOR KOUDI
-			// change levels and set zhuangjia 
-			if (totalPoints == 0) {
-				// zhuangjia goes up 3 
-				scoreBoardData.players.filter(x=> x.joinedZhuang == true).map(x => x.level = x.level + 3)
-
-			} else if (totalPoints < 60) {
-				//zhuang jia team goes up 2 levels 
-				scoreBoardData.players.filter(x=> x.joinedZhuang == true).map(x => x.level = x.level + 2)
-
-
-			} else if (totalPoints < 110) {
-				//zhuang jia team goes up 1 level
-				scoreBoardData.players.filter(x=> x.joinedZhuang == true).map(x => x.level = x.level + 1)
-
-
-			} else if (totalPoints < 160) {
-				// between 110-160, shangtai 
-				
-
-			} else if (totalPoints < 210) {
-				//between 160 and 210, go up one, switch zhuangjia sides 
-				scoreBoardData.players.filter(x=> x.joinedZhuang == false).map(x => x.level = x.level + 1)
-
-			} else if (totalPoints < 260) {
-				// btwn 210-260, zhuangjia flips, team goes up 2 levels 
-				scoreBoardData.players.filter(x=> x.joinedZhuang == false).map(x => x.level = x.level + 2)
-				
-			} else {
-				// 260+, go up 3 levels 
-				scoreBoardData.players.filter(x=> x.joinedZhuang == false).map(x => x.level = x.level + 3)
-
-			}
-			
-			console.log('koudi points', kouDiPoints)
-			 
-		} 
-
-		// need to track scores by team once teams are found 
-
-		io.emit('updateScore', {scoreBoard: scoreBoardData})
-		io.emit('cardPlayed', {cards: cardHand.cards, player: cardHand.player, points: pointsInRound});
-			
 	});
 
 	socket.on('kouDi', function(discardedCards) {
