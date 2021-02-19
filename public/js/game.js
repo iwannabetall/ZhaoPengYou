@@ -35,7 +35,7 @@ function preload ()
 			}
 		}
 		
-		this.load.svg('small_joker', 'svgs/small_joker.svg')
+		this.load.svg('vsmall_joker', 'svgs/vsmall_joker.svg')
 		this.load.svg('zbig_joker', 'svgs/zbig_joker.svg')
 
 		var avatars = ['charmander_sm', 'squirtle', 'pikachu_sm', 'snorlax', 'psyduck']

@@ -16,7 +16,7 @@ for card in list:
 		if card[0] == '1':
 			newFile = 'zbig_joker.svg'
 		else:
-			newFile = 'small_joker.svg'
+			newFile = 'vsmall_joker.svg'
 	os.rename(card, newFile)
 
 

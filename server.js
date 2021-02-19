@@ -53,7 +53,7 @@ var teamSet = false
 
 var cardVals = ['2','3','4','5','6','7','8','90','910','jack','queen','rking', 'sace'];
 
-var cardDeck = ["sace_of_diamonds", "2_of_diamonds", "3_of_diamonds", "4_of_diamonds", "5_of_diamonds", "6_of_diamonds", "7_of_diamonds", "8_of_diamonds", "90_of_diamonds", "910_of_diamonds", "jack_of_diamonds", "queen_of_diamonds", "rking_of_diamonds", "sace_of_spades", "2_of_spades", "3_of_spades", "4_of_spades", "5_of_spades", "6_of_spades", "7_of_spades", "8_of_spades", "90_of_spades", "910_of_spades", "jack_of_spades", "queen_of_spades", "rking_of_spades", "sace_of_clubs", "2_of_clubs", "3_of_clubs", "4_of_clubs", "5_of_clubs", "6_of_clubs", "7_of_clubs", "8_of_clubs", "90_of_clubs", "910_of_clubs", "jack_of_clubs", "queen_of_clubs", "rking_of_clubs", "sace_of_hearts", "2_of_hearts", "3_of_hearts", "4_of_hearts", "5_of_hearts", "6_of_hearts", "7_of_hearts", "8_of_hearts", "90_of_hearts", "910_of_hearts", "jack_of_hearts", "queen_of_hearts", "rking_of_hearts", 'zbig_joker', 'small_joker']
+var cardDeck = ["sace_of_diamonds", "2_of_diamonds", "3_of_diamonds", "4_of_diamonds", "5_of_diamonds", "6_of_diamonds", "7_of_diamonds", "8_of_diamonds", "90_of_diamonds", "910_of_diamonds", "jack_of_diamonds", "queen_of_diamonds", "rking_of_diamonds", "sace_of_spades", "2_of_spades", "3_of_spades", "4_of_spades", "5_of_spades", "6_of_spades", "7_of_spades", "8_of_spades", "90_of_spades", "910_of_spades", "jack_of_spades", "queen_of_spades", "rking_of_spades", "sace_of_clubs", "2_of_clubs", "3_of_clubs", "4_of_clubs", "5_of_clubs", "6_of_clubs", "7_of_clubs", "8_of_clubs", "90_of_clubs", "910_of_clubs", "jack_of_clubs", "queen_of_clubs", "rking_of_clubs", "sace_of_hearts", "2_of_hearts", "3_of_hearts", "4_of_hearts", "5_of_hearts", "6_of_hearts", "7_of_hearts", "8_of_hearts", "90_of_hearts", "910_of_hearts", "jack_of_hearts", "queen_of_hearts", "rking_of_hearts", 'zbig_joker', 'vsmall_joker']
 
 // var cardDeck = ["sace_of_diamonds", "2_of_diamonds", "90_of_diamonds", "910_of_diamonds", "jack_of_diamonds", "queen_of_diamonds", "rking_of_diamonds", "sace_of_spades", "2_of_spades", "3_of_spades", "4_of_spades", "5_of_spades","90_of_spades", "910_of_spades", "rking_of_spades", "sace_of_clubs", "2_of_clubs", "5_of_clubs","910_of_clubs", "jack_of_clubs", "queen_of_clubs", "rking_of_clubs", "sace_of_hearts", "90_of_hearts", "910_of_hearts", "jack_of_hearts", "queen_of_hearts", "rking_of_hearts"]
 
@@ -174,13 +174,16 @@ function checkIfPatternsMatch(pattern1, pattern2) {
 	return true
 }
 
-function beatHand(originalHand, newHand, biAttempt) {
+function beatHand(originalHand, newHand, biAttempt, trumpCard) {
 	// biAttempt = true if original hand is fu and new hand is all zhu
 	// FOR FU PAI ONLY that match suit - OR IF ALL ZHU??? 
 	// given stats of 2 card hands, find the bigger zhaopengyou hand 
 	// returns true if new hand beats previous high hand 
 	var patternMatch = checkIfPatternsMatch(originalHand.freq, newHand.freq)
 	
+	var trumpSuit = trumpCard.split('_')[2]
+	var trumpCardNum = trumpCard.split('_')[0]
+
 	// make sure suits match unless it's a biattempt 
 	if (newHand.allSameSuit && Object.keys(newHand.suits)[0] == Object.keys(originalHand.suits)[0]) {
 		var matchingSuit = true
@@ -275,7 +278,7 @@ function getCardStats(cards, trumpCard) {
 	var trumpSuit = trumpCard.split('_')[2]
 	var trumpCardNum = trumpCard.split('_')[0]
 
-	var cardVals = ['2','3','4','5','6','7','8','90','910','jack','queen','rking', 'sace'];
+	var cardVals = ['2','3','4','5','6','7','8','90','910','jack','queen','rking', 'sace', `t${trumpCardNum}`, `u${trumpCardNum}`, 'vsmall', 'zbig'];
 	
 	var cardValsWithoutTrump = cardVals.filter(x=>x != trumpCardNum)
 	
@@ -296,24 +299,34 @@ function getCardStats(cards, trumpCard) {
 	cardStats.zimeiduiPattern = []  // need sep freq for zimeidui so 
 
 	for (var i = 0; i < cards.length; i++){
-		var s = cards[i].split('_')[2]
+		var s = cards[i].split('_')[2]		
 
-		if (!cardStats.cards[cards[i]]) {
- 			cardStats.cards[cards[i]] = 1
-		} else {
-			cardStats.cards[cards[i]] = cardStats.cards[cards[i]] + 1 
-		}
+		var cardName = cards[i]
 
-		// check to see if matching suit or all trump cards 
+		// check to see if matching suit or all trump cards -- undefined = joker 
 		if (s == undefined || s == trumpSuit || cards[i].includes(trumpCardNum)) {
 			cardStats.trumpCards = cardStats.trumpCards + 1
-
+			if (cards[i].includes(trumpCardNum)){
+				if (s == trumpSuit) {
+					// rename card b/c it's zhu 8					
+					cardName = `u${cards[i]}`
+				} else {
+					// fu zhu 	
+					cardName = `t${cards[i]}`
+				}
+			}
 		} else if (!cardStats.suits[s]) {
 			console.log('no joker, new suit') 
 			cardStats.suits[s] = 1
 		} else if (s != undefined) {
 			// make sure not joker 
 			cardStats.suits[s] = cardStats.suits[s] + 1	
+		}
+
+		if (!cardStats.cards[cardName]) {
+ 			cardStats.cards[cardName] = 1
+		} else {
+			cardStats.cards[cardName] = cardStats.cards[cardName] + 1 
 		}
 	
 	}
@@ -338,13 +351,51 @@ function getCardStats(cards, trumpCard) {
 		var zimeidui = cardStats.pairs.concat(cardStats.triples).sort()
 		var zimeiduiVals = []
 		for (var i = 0; i < zimeidui.length - 1; i++){
+				
+			// deal with trump eg if fu zhu 8 or zhu 8
+			// if (zimeidui[i].split('_')[0] == trumpCardNum){
+			// 	if (zimeidui[i].split('_')[2] == trumpSuit) {
+			// 		// rename card b/c it's zhu 8
+			// 		var ind1 = cardValsWithoutTrump.indexOf(`u${zimeidui[i].split('_')[0]}`)
+			// 		var cardName1 = `u${zimeidui[i]}`
+			// 	} else {
+			// 		// fu zhu 
+			// 		var ind1 = cardValsWithoutTrump.indexOf(`t${zimeidui[i].split('_')[0]}`)
+			// 		var cardName1 = `t${zimeidui[i]}`
+			// 	}
+				
+			// } else {
+			// 	var ind1 = cardValsWithoutTrump.indexOf(zimeidui[i].split('_')[0])
+			// 	var cardName1 = zimeidui[i]
+			// }
+
+			// if (zimeidui[i+1].split('_')[0] == trumpCardNum){
+			// 	if (zimeidui[i+1].split('_')[2] == trumpSuit) {
+			// 		// rename card b/c it's zhu 8
+			// 		var ind2 = cardValsWithoutTrump.indexOf(`u${zimeidui[i+1].split('_')[0]}`)	
+			// 		var cardName2 = `u${zimeidui[i]}`
+			// 	} else {
+			// 		// fu zhu 
+			// 		var ind2 = cardValsWithoutTrump.indexOf(`t${zimeidui[i+1].split('_')[0]}`)
+			// 		var cardName2 = `t${zimeidui[i]}`
+			// 	}
+				
+			// } else {
+			// 	var ind2 = cardValsWithoutTrump.indexOf(zimeidui[i+1].split('_')[0])
+			// 	var cardName2 = zimeidui[i+1]
+			// }
+
+			// var dist = ind2 - ind1
+
 			var dist = cardValsWithoutTrump.indexOf(zimeidui[i+1].split('_')[0]) - cardValsWithoutTrump.indexOf(zimeidui[i].split('_')[0])
+
 			if (dist == 1) {
 				// if connected pairs/triples, remove from pairs/triples list 
 				cardStats.pairs = cardStats.pairs.filter(x=> x != zimeidui[i+1] && x != zimeidui[i])
 				cardStats.triples = cardStats.triples.filter(x=> x != zimeidui[i+1] && x != zimeidui[i])
+				
 				//create a zimeidui list 
-				if (!zimeiduiVals.includes(zimeidui[i])){
+				if (!zimeiduiVals.includes(zimeidui[i])) {
 					zimeiduiVals.push(zimeidui[i])
 				}
 
@@ -589,7 +640,7 @@ io.on('connection', function (socket) {
 			if (scoreBoardData.highestHand.cardStats.allZhu) {
 				// highest hand is zhu, need to beat the card, but must have zhu 
 				if (playedStats.allZhu) {
-					var newLeader = beatHand(scoreBoardData.highestHand.cardStats, playedStats, false)
+					var newLeader = beatHand(scoreBoardData.highestHand.cardStats, playedStats, false, scoreBoardData.zhuCard)
 					if (newLeader){
 						// if new highest hand, update data 
 						scoreBoardData.highestHand.cardStats = playedStats
@@ -603,11 +654,11 @@ io.on('connection', function (socket) {
 
 				if (playedStats.allZhu) {
 					// attempt to bi
-					var newLeader = beatHand(scoreBoardData.highestHand.cardStats, playedStats, true)
+					var newLeader = beatHand(scoreBoardData.highestHand.cardStats, playedStats, true, scoreBoardData.zhuCard)
 				} else {
 					// regular card play
 					console.log('regular card play')
-					var newLeader = beatHand(scoreBoardData.highestHand.cardStats, playedStats, false)
+					var newLeader = beatHand(scoreBoardData.highestHand.cardStats, playedStats, false, scoreBoardData.zhuCard)
 				}
 				
 				if (newLeader){
