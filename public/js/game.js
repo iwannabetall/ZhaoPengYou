@@ -473,7 +473,7 @@ function playHand() {
 	console.log(dropZoneCards)
 	console.log(yourHandList)
 	
-	socket.emit('can I go', {id: playerid, cards: dropZoneCards})	
+	socket.emit('can I go', {player: playerid, cards: dropZoneCards, remainingCards: yourHandList})	
 }
 
 function clearTable() {
