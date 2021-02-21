@@ -50,12 +50,16 @@ function update() {
 
 	// L/R arrows slide card hand across screen 
 	// TODO - MAKE SURE TO STOP IF REACH END OF HAND 
-	 if (cursors.left.isDown || cursors.up.isDown)
+	 if ((cursors.left.isDown || cursors.up.isDown) && cardHandContainer.x < 200)
     {
+    	console.log(maxScroll)
+    	console.log(cardHandContainer.x, cardHandContainer.y)
         cardHandContainer.x += 6
     }
-    else if (cursors.right.isDown || cursors.down.isDown)
+    else if ((cursors.right.isDown || cursors.down.isDown) && cardHandContainer.x > -maxScroll)
     {
+    	console.log(maxScroll)
+    	console.log(cardHandContainer.x, cardHandContainer.y)
      	cardHandContainer.x -= 6
     }
 
@@ -85,6 +89,8 @@ var currentZhuangId
 var zhuCard //set zhu suit
 var cursors
 var cardHandContainer
+
+var maxScroll = 500
 
 socket.on('playerid', function(id){	
 	playerid = id
@@ -221,6 +227,8 @@ function create ()
 			cardHandContainer.add(newCard)  // can also pass as array
 		}, 1500)
 			
+		maxScroll = (data.count * 30)/5
+		console.log(maxScroll)
         // yourHand.add(card)
         // console.log(yourHandList)
         // card.on('pointerdown', function(pointer, localX, localY, event) {
@@ -459,6 +467,9 @@ function create ()
 			lastRound = true
 		}
 
+		maxScroll = (yourHandList.length * 30)/5
+		console.log(maxScroll)
+
 		dropZoneCardsSprites.forEach((card)=> card.destroy())
 		socket.emit("playHand", {cards: dropZoneCards, player: playerid, lastRound: lastRound, remainingCards: yourHandList});
 	
@@ -499,7 +510,7 @@ function sortHand(cards, currentCardObj) {
 
 	// pass zhu in as parameter 
 	// console.log(yourHand)
-	// console.log(yourHandList)
+	console.log(yourHandList)
 
 	yourHand.forEach((card)=> card.destroy())
 
