@@ -658,79 +658,6 @@ io.on('connection', function (socket) {
 		// server needs to keep track of what cards are played in a round and who plays it so we can clear the hand later / track for history	 	
 		//array of objects w/keys where user is the key and cards is the value
 
-
-		// delete LATER 
-		// var followedSuit = false
-
-		// if (scoreBoardData.players.filter(x=>x.playedHand == true).length == 0) {
-		// 	// first person played, set them as highest hand
-		// 	// first play has to be all the same suit 
-		// 	scoreBoardData.highestHand.playedBy = cardHand.player
-		// 	scoreBoardData.highestHand.cards = cardHand.cards.sort()
-		// 	scoreBoardData.highestHand.cardStats = getCardStats(cardHand.cards, scoreBoardData.zhuCard)
-				
-		// 	// set what leading suit is to make sure ppl follow suit later
-		// 	var firstSuit = scoreBoardData.highestHand.cardStats.allZhu ? 'zhu' : Object.keys(scoreBoardData.highestHand.cardStats.suits)[0]
-		// 	scoreBoardData.firstSuit = firstSuit
-			
-		// 	// update turn info 
-		// 	scoreBoardData = updateWhoseTurn(scoreBoardData, cardHand.player)
-
-		// 	// check to see if they played a called card to be on a team if teams arent set yet NEED TO CLEAN THIS UP.  COPIED TWICE - TODO
-		// 	if (!teamSet) {
-		// 		// check to see if they're on your team 
-		// 		// (cardsPlayed, cardSought, condition, cardsBefore)
-		// 		var friend1 = areYouOnMyTeam(cardHand.cards, askedFriend1, cardsBefore1)
-		// 		cardsBefore1 = friend1.cardsBefore
-		// 		var friend2 = areYouOnMyTeam(cardHand.cards, askedFriend2, cardsBefore2)
-		// 		cardsBefore2 = friend2.cardsBefore
-
-		// 		if (friend1.onTheTeam == true || friend2.onTheTeam == true) {
-		// 			scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].joinedZhuang = true
-		// 			scoreBoardData.zhuangJia.teammates.push(scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].name)
-		// 		}
-				
-		// 		console.log(friend1, friend2) 
-		// 	}
-
-		// 	io.emit('updateScore', {scoreBoard: scoreBoardData})
-		// 	io.emit('cardPlayed', {cards: cardHand.cards, player: cardHand.player, points: pointsInRound});	
-
-		// } else {
-		// 	// for all hands played after the first person
-		// 	// need to make sure that they play either correct suit or zhu pai or are out of suit if they play zhu pai 
-		// 	// check that they followed suit or dont have that suit if theyre not going first 			
-			
-		// 	var playedStats = getCardStats(cardHand.cards, scoreBoardData.zhuCard)
-		// 	var remainingCardStats = getCardStats(cardHand.remainingCards.map(x=>x.card), scoreBoardData.zhuCard)
-
-
-		// 	if (playedStats.allZhu && scoreBoardData.firstSuit != 'zhu') {
-		// 		// make sure that they're out of cards of the suit theyre supposed to play if theyre trying to bi
-		// 		followedSuit = cardHand.remainingCards.map(x=>x.card.split('_')[2]).filter(x=>x == scoreBoardData.firstSuit).length == 0 ? true : false
-
-		// 		var errMsg = !followedSuit ? `You cannot bi while you still have ${scoreBoardData.firstSuit} in your hand.` : ''
-		// 		console.log('bi attempt ok? ', followedSuit)
-		// 	} else if (!playedStats.allZhu && scoreBoardData.firstSuit == 'zhu') {
-		// 		// if they lead wit zhu, make sure they dont have zhu left 		
-		// 		followedSuit = remainingCardStats.trumpCards == 0 ? true : false
-		// 		var errMsg = !followedSuit ? "Check your hand and play a trump card. Diao Zhu." : ''
-		// 		console.log('out of zhu', followedSuit)
-		// 	} else if (playedStats.allZhu && scoreBoardData.firstSuit == 'zhu'){
-		// 		// leading suit is fu card, just check if suit matches 
-		// 		followedSuit = true
-		// 		console.log('lead with zhu', followedSuit)
-		// 	} else if (scoreBoardData.firstSuit != 'zhu'){
-		// 		// you either follow suit or are out of the suit 
-		// 		followedSuit = playedStats.suits[scoreBoardData.firstSuit] == scoreBoardData.firstSuit ? true : !remainingCardStats.suits[scoreBoardData.firstSuit] ? true : false
-
-		// 		var errMsg = !followedSuit ? `Check your hand and play your ${scoreBoardData.firstSuit}` : ''
-
-		// 		console.log('regular card play follow suit? ', followedSuit)
-		// 	}
-
-		// }
-
 		var playedStats = getCardStats(cardHand.cards, scoreBoardData.zhuCard)
 
 		// for non round leading hands, check to see whose is higher
@@ -781,14 +708,12 @@ io.on('connection', function (socket) {
 		var pts = tallyScoreByTeam(scoreBoardData.players)
 		console.log(pts)
 
+		// // update whose turn it is 
 		scoreBoardData = updateWhoseTurn(scoreBoardData, cardHand.player)
 			
 		// // need to determine end of round and reset turn tracker
 		var scoreBoardOrder = scoreBoardData.players.map(x => x.id)			 
-		// // update whose turn it is 
-		// var turn = scoreBoardOrder.indexOf(cardHand.player)
-		// scoreBoardData.players[turn].playedHand = true
-
+		
 		if (scoreBoardData.players.filter(x=>x.playedHand == true).length == scoreBoardData.players.length) {
 			//everybody has played a hand, determine winner of round and set who's playing first
 			var winnerID = scoreBoardData.highestHand.playedBy
@@ -796,33 +721,11 @@ io.on('connection', function (socket) {
 			scoreBoardData.whoseTurn = winnerID
 			console.log('winner ', winnerID)
 
-
-			// var scoreBoardOrder = scoreBoardData.players.map(x => x.id)
-
 			scoreBoardData.players[scoreBoardOrder.indexOf(winnerID)].points = scoreBoardData.players[scoreBoardOrder.indexOf(winnerID)].points + pointsInRound
 
 			gameHistory.push(roundHistory)
 			
-		} else {
-			
-			// scoreBoardData = updateWhoseTurn(scoreBoardData, cardHand.player)
-			// // // need to determine end of round and reset turn tracker
-			// var scoreBoardOrder = scoreBoardData.players.map(x => x.id)			 
-			// // update whose turn it is 
-			// var turn = scoreBoardOrder.indexOf(cardHand.player)
-			// scoreBoardData.players[turn].playedHand = true
-		
-			// if (turn + 1 > scoreBoardOrder.length - 1) {
-			// 	// check if it's the last one in order 
-			// 	turn = 0
-			// 	scoreBoardData.whoseTurn = scoreBoardData.players[turn].id
-			// } else {
-			// 	// else next person in line 
-			// 	turn = turn + 1
-			// 	scoreBoardData.whoseTurn = scoreBoardData.players[turn].id
-			// }	// 
-
-		}
+		} 
 
 		// console.log('play', cardHand)
 		console.log('playhand scoreBoard', scoreBoardData)
@@ -900,10 +803,7 @@ io.on('connection', function (socket) {
 
 		io.emit('updateScore', {scoreBoard: scoreBoardData})
 		io.emit('cardPlayed', {cards: cardHand.cards, player: cardHand.player, points: pointsInRound});			
-		// } else {
-		// 	io.to(cardHand.player).emit('error', errMsg)
-		// }
-
+		
 	});
 
 	socket.on('kouDi', function(discardedCards) {

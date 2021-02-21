@@ -166,23 +166,24 @@ function create ()
 			playerAv.setData('x', x)
 			playerAv.setData('y', y)
 			playerAv.setData('type', 'playingPic')
-			var boxLength = 150 
-			var highlightPlayer = this.add.rectangle(x, y, boxLength, boxLength)
-			highlightPlayer.setStrokeStyle(4, 0xefc53f)
-			highlightPlayer.setData('id', playerOrderInfo[i].id).setVisible(false)
-			avatarBoxGroup.add(highlightPlayer)
+			// var boxLength = 150 
+			// var highlightPlayer = this.add.rectangle(x, y, boxLength, boxLength)
+			// highlightPlayer.setStrokeStyle(4, 0xefc53f)
+			// highlightPlayer.setData('id', playerOrderInfo[i].id).setVisible(false)
+			// avatarBoxGroup.add(highlightPlayer)
 
-			var text = this.add.text(x - 40,y - 40, playerOrderInfo[i].name).setInteractive()
-			text.setData('type', 'playingPic')
-			text.setData('id', playerOrderInfo[i].id)
+			var text = this.add.text(x - 40,y - 40, playerOrderInfo[i].name)
+			// .setInteractive()
+			// text.setData('type', 'playingPic')
+			// text.setData('id', playerOrderInfo[i].id)
 
-			text.input.hitArea.setSize(400,400)
+			// text.input.hitArea.setSize(400,400)
 
-			text.on('pointerdown', function(data) {
-				console.log(data.downX, data.downY)
-				console.log(this._text, this.getData('id'))
-				console.log(this.data.values)
-			})
+			// text.on('pointerdown', function(data) {
+			// 	console.log(data.downX, data.downY)
+			// 	console.log(this._text, this.getData('id'))
+			// 	console.log(this.data.values)
+			// })
 			// text.inputEnabled = true;
 			// text.events.onInputDown.add(function(data) {
 			// 	console.log(this, data)
@@ -235,7 +236,7 @@ function create ()
 	})
 
 	this.input.on('gameobjectdown', function (pointer, gameObject) {
-		console.log(gameObject.getData('type') )
+		console.log(gameObject.getData('type'), gameObject.type, gameObject.getData('card'))
 		
 		// when picking avatars at the beg
 		if (gameObject.getData('group') == 'avatar') {
@@ -497,10 +498,12 @@ function startCardDraw() {
 function sortHand(cards, currentCardObj) {
 
 	// pass zhu in as parameter 
+	// console.log(yourHand)
+	// console.log(yourHandList)
+
 	yourHand.forEach((card)=> card.destroy())
-	var cardsInHand = yourHandList.map(x=> x.card)
-	var cardsByDeck = yourHandList.map(x=> x.deck)
-	// console.log(cardsInHand)
+
+	var cardsInHand = yourHandList.map(x=> `${x.card}-${x.deck}`)
 	var suits = ['diamonds', 'spades', 'hearts', 'clubs'];
 	
 	// if zhu is set, sort according to zhu 
@@ -508,7 +511,7 @@ function sortHand(cards, currentCardObj) {
 		// sort so that blacks/red suits arent next to each other?? 
 		var zhuSuit = zhuCard.split('_')[2]	
 		suits = suits.filter(x => x != zhuSuit)
-		suits.push(zhuSuit)
+		suits.push(zhuSuit)		
 
 		// deal with separating zhu card from regular cards
 		var zhuNums = cardsInHand.filter(x=> x.includes(zhuCard.split('_')[0]))
@@ -522,10 +525,11 @@ function sortHand(cards, currentCardObj) {
 	
 	for (var i = 0; i < suits.length; i++) {
 		// sort by suit 
-		var cardsBySuit = cardsInHand.filter(x=>x.includes(suits[i]))
+		var cardsBySuit = cardsInHand.filter(x=>x.includes(suits[i]))		
 		// remove zhu card 
 		if (zhuCard) {
 			cardsBySuit = cardsBySuit.filter(x=> !x.includes(zhuCard.split('_')[0]))
+			console.log(cardsBySuit)
 		}
 		sortedHand = sortedHand.concat(cardsBySuit.sort())	
 	}
@@ -540,8 +544,14 @@ function sortHand(cards, currentCardObj) {
 	// console.log(sortedHand)
 
 	for (var i = 0; i < sortedHand.length; i++){
-		var sortedCard = self.add.sprite(30 * i + 50, 200, sortedHand[i]).setScale(cardSize, cardSize).setName(`${sortedHand[i]}${cardsByDeck[i]}`).setData('card', 'inHand').setInteractive()
+		var deck = sortedHand[i].split('-')[1]
+		var cardName = sortedHand[i].split('-')[0]
+
+		// console.log(cardName, deck)
+		var sortedCard = self.add.sprite(30 * i + 50, 200, cardName).setScale(cardSize, cardSize).setName(`${cardName}${deck}`).setData('card', 'inHand').setInteractive()
+		// sortedCard.setData('card', 'inHand')
 		cardHandContainer.add(sortedCard)
+		yourHand.push(sortedCard)
 	}
 
 	// how do i update yourHandList mid deal w/o missing a card??? --should prob sort server side?? 
