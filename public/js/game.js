@@ -228,7 +228,7 @@ function create ()
 		}, 1500)
 			
 		maxScroll = (data.count * 30)/5
-		// console.log(maxScroll)
+		console.log(maxScroll)
         // yourHand.add(card)
         // console.log(yourHandList)
         // card.on('pointerdown', function(pointer, localX, localY, event) {
@@ -277,7 +277,7 @@ function create ()
 		    var cardClicked = gameObject.name  // unique id ie 2 of hearts from deck 1
 		    var cardVal = gameObject.texture.key  // ie 2 of hearts 
 		    // console.log(gameObject)
-		    // console.log(cardVal, gameObject.name)
+		    // console.log(cardClicked)
 		    if (!dropZoneCardsTracker.includes(cardClicked)) {
 		    	// if haven't selected this card yet, move it up, add to selected list 
 		    	gameObject.y = gameObject.y - 20
@@ -291,6 +291,7 @@ function create ()
 		    	if (last2ClickedCards.length == 2) {
 		    		last2ClickedCards.pop() 
 		    	}
+
 		    	last2ClickedCards.unshift(gameObject.texture.key)  // just need to know the card, not which deck 
 		    	// console.log(dropZoneCardsSprites)
 		    } else {
@@ -303,8 +304,13 @@ function create ()
 		    	dropZoneCards.splice(removeCardInd, 1)
 		    	kouDiCards.splice(removeCardInd, 1)
 
+		    	// console.log('remove', dropZoneCardsSprites.length, dropZoneCardsTracker, cardIndex)
+
 		    	dropZoneCardsSprites.splice(cardIndex, 1)  // remove gameobject from array
 		    	kouDiSprites.splice(cardIndex, 1)  // remove gameobject from array
+
+		    	// console.log('remove', cardIndex, dropZoneCardsSprites.length)
+
 		    	// console.log(dropZoneCardsSprites)
 		    }	   
 		    
@@ -394,13 +400,13 @@ function create ()
 
 		var wedge = 2*Math.PI/playerOrder.length // browser user 0 is at 270 degrees and every person after is 360/# of players minus 
 		var playerIndex = playerOrder.indexOf(playerId)
-		console.log(playerIndex, playerOrder, playerId)
+		// console.log(playerIndex, playerOrder, playerId)
 		var angle = 3 * (Math.PI) / 2 - playerIndex * wedge
 		var radius = 250
 
 		var x = this.cameras.main.centerX + radius * Math.cos(angle) 
 		var y = this.cameras.main.centerY - radius * Math.sin(angle)
-		console.log(self, this)
+		// console.log(self, this)
 		for (var i = 0; i < hand.length; i++) {
 			// console.log(hand[i])
 			var card = this.add.sprite(30 * i + x, y, hand[i]).setScale(cardSize, cardSize)
@@ -471,11 +477,14 @@ function create ()
 		console.log(maxScroll)
 
 		dropZoneCardsSprites.forEach((card)=> card.destroy())
+		console.log(dropZoneCardsSprites)
+
 		socket.emit("playHand", {cards: dropZoneCards, player: playerid, lastRound: lastRound, remainingCards: yourHandList});
 	
 		// tell server what we're playing to tell everybody else
 		dropZoneCardsTracker = []
 		dropZoneCards = []
+		dropZoneCardsSprites = []
 	})
 }
 
@@ -485,7 +494,11 @@ function playHand() {
 	console.log(dropZoneCards)
 	console.log(yourHandList)
 	
-	socket.emit('can I go', {player: playerid, cards: dropZoneCards, remainingCards: yourHandList})	
+	for (var i = 0; i < dropZoneCards.length; i++) {
+		var remaining = yourHandList.filter(x=>x.card != dropZoneCards[i])
+	}
+	console.log(remaining)
+	socket.emit('can I go', {player: playerid, cards: dropZoneCards, remainingCards: remaining})	
 }
 
 function clearTable() {
@@ -540,7 +553,7 @@ function sortHand(cards, currentCardObj) {
 		// remove zhu card 
 		if (zhuCard) {
 			cardsBySuit = cardsBySuit.filter(x=> !x.includes(zhuCard.split('_')[0]))
-			console.log(cardsBySuit)
+			// console.log(cardsBySuit)
 		}
 		sortedHand = sortedHand.concat(cardsBySuit.sort())	
 	}

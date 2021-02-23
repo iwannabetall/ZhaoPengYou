@@ -55,7 +55,7 @@ var cardVals = ['2','3','4','5','6','7','8','90','910','jack','queen','rking', '
 
 var cardDeck = ["sace_of_diamonds", "2_of_diamonds", "3_of_diamonds", "4_of_diamonds", "5_of_diamonds", "6_of_diamonds", "7_of_diamonds", "8_of_diamonds", "90_of_diamonds", "910_of_diamonds", "jack_of_diamonds", "queen_of_diamonds", "rking_of_diamonds", "sace_of_spades", "2_of_spades", "3_of_spades", "4_of_spades", "5_of_spades", "6_of_spades", "7_of_spades", "8_of_spades", "90_of_spades", "910_of_spades", "jack_of_spades", "queen_of_spades", "rking_of_spades", "sace_of_clubs", "2_of_clubs", "3_of_clubs", "4_of_clubs", "5_of_clubs", "6_of_clubs", "7_of_clubs", "8_of_clubs", "90_of_clubs", "910_of_clubs", "jack_of_clubs", "queen_of_clubs", "rking_of_clubs", "sace_of_hearts", "2_of_hearts", "3_of_hearts", "4_of_hearts", "5_of_hearts", "6_of_hearts", "7_of_hearts", "8_of_hearts", "90_of_hearts", "910_of_hearts", "jack_of_hearts", "queen_of_hearts", "rking_of_hearts", 'zbig_joker', 'vsmall_joker']
 
-// var cardDeck = ["sace_of_diamonds", "2_of_diamonds", "90_of_diamonds", "910_of_diamonds", "jack_of_diamonds", "queen_of_diamonds", "rking_of_diamonds", "sace_of_spades", "2_of_spades", "3_of_spades", "4_of_spades", "5_of_spades","90_of_spades", "910_of_spades", "rking_of_spades", "sace_of_clubs", "2_of_clubs", "5_of_clubs","910_of_clubs", "jack_of_clubs", "queen_of_clubs", "rking_of_clubs", "sace_of_hearts", "90_of_hearts", "910_of_hearts", "jack_of_hearts", "queen_of_hearts", "rking_of_hearts"]
+// var cardDeck = ["sace_of_diamonds", "2_of_diamonds", "90_of_diamonds", "910_of_diamonds", "jack_of_diamonds", "queen_of_diamonds", "rking_of_diamonds", "sace_of_spades", "2_of_spades", "3_of_spades", "4_of_spades", "5_of_spades ","90_of_spades", "910_of_spades", "rking_of_spades", "sace_of_clubs", "2_of_clubs", "5_of_clubs","910_of_clubs", "jack_of_clubs", "queen_of_clubs", "rking_of_clubs", "sace_of_hearts", "90_of_hearts", "910_of_hearts", "jack_of_hearts", "queen_of_hearts", "rking_of_hearts"]
 
 function generateDecks(decksNeeded) {
 	var fullCardDeck = []	
@@ -626,6 +626,7 @@ io.on('connection', function (socket){
 					followedSuit = true
 					console.log('lead with zhu', followedSuit)
 				} else if (scoreBoardData.firstSuit != 'zhu'){
+					console.log(!remainingCardStats.suits[scoreBoardData.firstSuit] )
 					// you either follow suit or are out of the suit 
 					followedSuit = playedStats.allSameSuit && Object.keys(playedStats.suits)[0] == scoreBoardData.firstSuit ? true : !remainingCardStats.suits[scoreBoardData.firstSuit] ? true : false
 
@@ -645,7 +646,7 @@ io.on('connection', function (socket){
 		} else if (cardHand.cards.length != scoreBoardData.highestHand.cards.length) {
 			// 
 			console.log('not the right number of cards')			
-			console.log(cardHand.cards, scoreBoardData.highestHand.cards)
+			console.log(cardHand.cards, scoreBoardData.highestHand.cards, scoreBoardData.whoseTurn, scoreBoardData.highestHand.cards.length == 0)
 			
 		} else {
 			console.log('not your turn')
@@ -872,17 +873,17 @@ io.on('connection', function (socket){
 
 	socket.on('liang', function(data) {
 		// TODO NEED TO DEAL WITH 3 DECK AND GET ALL 3 ZHU 
-		console.log('liang', data)
-		console.log('liangData', liangData)
-
+		// console.log('liang', data)
+		// console.log('liangData', liangData)
+		console.log('liang data', data)
 		var scoreBoardOrder = scoreBoardData.players.map(x => x.id)
 		// update whose turn it is 
 		var p = scoreBoardOrder.indexOf(data.id)
-		console.log(p)
+		// console.log(p)
 		if (data.card.length > 0) {
 				// check if card already flipped 
 			if (liangData.flippedBy == null) {
-				console.log('first zhu', scoreBoardData.players[p].level, data.card.includes(scoreBoardData.players[p].level), data.card[0])
+				// console.log('first zhu', scoreBoardData.players[p].level, data.card.includes(scoreBoardData.players[p].level), data.card[0])
 				// if nobody flipped yet, make sure they flipped right level
 				if (data.card[0].includes(scoreBoardData.players[p].level) && data.card.length == 1) {
 					//TODO need to make sure they haven't already flipped this one ie click same card twice 
@@ -906,7 +907,7 @@ io.on('connection', function (socket){
 					scoreBoardData.zhuCard = data.card[0]
 
 					liangData.zhuCard = data.card[0]
-					console.log('zhu flipped', liangData)
+					// console.log('zhu flipped', liangData)
 					io.emit('zhuLiangLe', {liangData: liangData})
 				}
 
@@ -925,6 +926,7 @@ io.on('connection', function (socket){
 
 				// priority matching --must be same suit and have equal number or more 
 				if (allMatch && firstLiang.card == data.card[0] && firstLiang.name == data.id && (data.card.length >= liangData.numberFlipped)) {
+					// console.log('priority')
 					liangData.numberFlipped = data.card.length
 					liangData.name = data.name
 					liangData.flippedBy = data.id  // need to announce who flipped it 
@@ -937,6 +939,7 @@ io.on('connection', function (socket){
 
 				} else if (allMatch && firstLiang.card != data.card[0] && firstLiang.name != data.id && (data.card.length > liangData.numberFlipped)) {
 					
+					// console.log('beating zhu')
 					// flipping diff zhu 
 					liangData.numberFlipped = data.card.length
 					liangData.name = data.name
@@ -959,8 +962,7 @@ io.on('connection', function (socket){
 			}
 		}
 		
-
-		console.log(liangData)		
+		// console.log(liangData, firstLiang)		
 	})	
 		// need to check that nobody else has flipped and that it's the right level
 
