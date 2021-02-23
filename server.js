@@ -431,7 +431,7 @@ function updateWhoseTurn(gameData, playerid) {
 	return gameData
 }
 
-io.on('connection', function (socket) {
+io.on('connection', function (socket){
 
 	console.log('A user connected: ' + socket.id);
 	
@@ -874,109 +874,97 @@ io.on('connection', function (socket) {
 		// TODO NEED TO DEAL WITH 3 DECK AND GET ALL 3 ZHU 
 		console.log('liang', data)
 		console.log('liangData', liangData)
-		// check if card already flipped 
-		if (liangData.flippedBy == null && data.card.length == 1) {
-			console.log('first zhu', data.card.includes(startingLevel))
-			// if nobody flipped yet, 
-			if (data.card[0].includes(startingLevel)){
-				//TODO need to make sure they haven't already flipped this one ie click same card twice 
-				
-				liangData.numberFlipped = liangData.numberFlipped + 1
-				liangData.name = data.name
-				liangData.flippedBy = data.id  // need to announce who flipped it 
 
-				var suits = ['diamonds', 'spades', 'clubs', 'hearts'];
-				for (var i = 0; i < suits.length; i++) {
-					if (data.card.includes(suits[i])){
-						liangData.suit = suits[i]
-						scoreBoardData.trumpSuit = suits[i]
+		var scoreBoardOrder = scoreBoardData.players.map(x => x.id)
+		// update whose turn it is 
+		var p = scoreBoardOrder.indexOf(data.id)
+		console.log(p)
+		if (data.card.length > 0) {
+				// check if card already flipped 
+			if (liangData.flippedBy == null) {
+				console.log('first zhu', scoreBoardData.players[p].level, data.card.includes(scoreBoardData.players[p].level), data.card[0])
+				// if nobody flipped yet, make sure they flipped right level
+				if (data.card[0].includes(scoreBoardData.players[p].level) && data.card.length == 1) {
+					//TODO need to make sure they haven't already flipped this one ie click same card twice 
+					
+					liangData.numberFlipped = 1
+					liangData.name = data.name
+					liangData.flippedBy = data.id  // need to announce who flipped it 
+
+					var suits = ['diamonds', 'spades', 'clubs', 'hearts'];
+					for (var i = 0; i < suits.length; i++) {
+						if (data.card.includes(suits[i])){
+							liangData.suit = suits[i]
+							scoreBoardData.trumpSuit = suits[i]
+						}
+					}
+					
+					if (firstLiang.name == null) {
+						firstLiang.card = data.card[0]
+						firstLiang.name = data.id
+					}
+					scoreBoardData.zhuCard = data.card[0]
+
+					liangData.zhuCard = data.card[0]
+					console.log('zhu flipped', liangData)
+					io.emit('zhuLiangLe', {liangData: liangData})
+				}
+
+			} else if (data.card.length > 1) {
+				// if somebody already flipped, need more than 1 zhu 
+				// need to make sure can't change zhu 
+
+				// check that all cards match 
+				var allMatch = true
+				for (var i = 0; i < data.card.length; i++) {
+					if (data.card[0] != data.card[i]) {
+						allMatch = false
 					}
 				}
-				
-				if (firstLiang.name == null) {
-					firstLiang.card = data.card[0]
-					firstLiang.name = data.id
-				}
-				scoreBoardData.zhuCard = data.card[0]
+				var suit = data.card[0].split('_')[2]
 
-				liangData.zhuCard = data.card[0]
-				console.log('zhu flipped', liangData)
-				io.emit('zhuLiangLe', {liangData: liangData})
-			}
+				// priority matching --must be same suit and have equal number or more 
+				if (allMatch && firstLiang.card == data.card[0] && firstLiang.name == data.id && (data.card.length >= liangData.numberFlipped)) {
+					liangData.numberFlipped = data.card.length
+					liangData.name = data.name
+					liangData.flippedBy = data.id  // need to announce who flipped it 
+					
+					liangData.suit = suit
+					scoreBoardData.trumpSuit = suit
 
-		}
-		else if (data.card.length > 1){
-			// need to make sure can't change zhu 
+					scoreBoardData.zhuCard = data.card[0]
+					liangData.zhuCard = data.card[0]
 
-			// check that one of the two cards is a potential zhu
-			var suit1 = data.card[0].split('_')[2]  //TODO need to make sure no jokers or index out of bounds 
-			var suit2 = data.card[1].split('_')[2] 
-			var isZhu1 = data.card[0].includes(startingLevel)
-			var isZhu2 = data.card[1].includes(startingLevel)
-			
-			if (suit1 == suit2 && isZhu1 && isZhu2 && liangData.numberFlipped < 2) {
-				// need to check that hte person isnt flipping their own flipped zhu 
+				} else if (allMatch && firstLiang.card != data.card[0] && firstLiang.name != data.id && (data.card.length > liangData.numberFlipped)) {
+					
+					// flipping diff zhu 
+					liangData.numberFlipped = data.card.length
+					liangData.name = data.name
+					liangData.flippedBy = data.id  // need to announce who flipped it 
+					
+					liangData.suit = suit
+					scoreBoardData.trumpSuit = suit
 
-				// flipped a pair and other person hasnt ding 
-				liangData.numberFlipped = 2
-				liangData.zhuCard = data.card[0]
-				liangData.suit = suit1
-				liangData.flippedBy = data.id 
-				liangData.name = data.name	
-				scoreBoardData.zhuCard = data.card[0]
-				scoreBoardData.trumpSuit = suit1
-				if (firstLiang.name == null) {
-					firstLiang.card = data.card[0]
-					firstLiang.name = data.id
+					scoreBoardData.zhuCard = data.card[0]
+					liangData.zhuCard = data.card[0]
+
+				} else {
+					io.emit('fail', {msg: 'have you already liang'})
 				}
 				io.emit('zhuLiangLe', {liangData: liangData})
 
-			} else if (isZhu1 && !liangData.zhuCard) {
-				// if either is zhu and havent set a zhu
-					// index 0 = most recently clicked card
-				liangData.numberFlipped = liangData.numberFlipped + 1
-				
-				// if suits don't match, make it the most recent one -- ie pop 		
-				liangData.zhuCard = data.card[0]
-				liangData.suit = suit1
-				liangData.flippedBy = data.id 
-				liangData.name = data.name
-				scoreBoardData.zhuCard = data.card[0]
-				scoreBoardData.trumpSuit = suit1
-				if (firstLiang.name == null) {
-					firstLiang.card = data.card[0]
-					firstLiang.name = data.id
-				}
-				io.emit('zhuLiangLe', {liangData: liangData})
-			} else if (isZhu2 && !liangData.zhuCard) {
-				// if either is zhu and havent set a zhu
-					// index 0 = most recently clicked card
-				liangData.numberFlipped = liangData.numberFlipped + 1
-				
-				// if suits don't match, make it the most recent one -- ie pop 		
-				liangData.zhuCard = data.card[1]
-				liangData.suit = suit2
-				liangData.flippedBy = data.id
-				liangData.name = data.name 
-				scoreBoardData.zhuCard = data.card[1]
-				scoreBoardData.trumpSuit = suit2
-				if (firstLiang.name == null) {
-					firstLiang.card = data.card[1]
-					firstLiang.name = data.id
-				}
-				io.emit('zhuLiangLe', {liangData: liangData})
 			} else {
 			// reject message ie invalid card
 				io.emit('fail', {msg: 'what are you doing??'})
 			}
-			
-			
 		}
+		
 
 		console.log(liangData)		
+	})	
 		// need to check that nobody else has flipped and that it's the right level
 
-	})
+	// })
 	// socket.on("disconnect", () => {
 	//	 console.log(socket.id, "Client disconnected");
 	//	 // remove player from list when disconnect and update player info 
