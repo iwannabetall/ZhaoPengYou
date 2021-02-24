@@ -502,11 +502,11 @@ function playHand() {
 	socket.emit('can I go', {player: playerid, cards: dropZoneCards, remainingCards: remaining})	
 }
 
-function clearTable() {
-	// should make sure that everybody has played first 
-	socket.emit('clearRound')
+// function clearTable() {
+// 	// should make sure that everybody has played first 
+// 	socket.emit('clearRound')
 	
-}
+// }
 
 function clearRound(){
 	cardsPlayed.forEach((card)=> card.destroy())

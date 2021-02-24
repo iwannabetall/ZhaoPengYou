@@ -724,6 +724,21 @@ io.on('connection', function (socket){
 			scoreBoardData.players[scoreBoardOrder.indexOf(winnerID)].points = scoreBoardData.players[scoreBoardOrder.indexOf(winnerID)].points + pointsInRound
 
 			gameHistory.push(roundHistory)
+
+			// clear the board after 2 seconds 
+			setTimeout(function() {
+				io.emit('clearTable')
+
+				scoreBoardData.highestHand = {}
+				scoreBoardData.highestHand.cards = []
+
+				// reset round data 
+				pointsInRound = 0
+				roundHistory = {}
+				cardHistory = []
+				scoreBoardData.players.forEach(x=> x.playedHand = false)
+
+			}, 2000)	
 			
 		} 
 
@@ -815,24 +830,24 @@ io.on('connection', function (socket){
 
 	})
 
-	socket.on('clearRound', function() {
-		// calculate number of points in the round and who won the points 
-		console.log('clear round', roundHistory, pointsInRound)
-		// gameHistory.push(roundHistory)
-		// console.log('clearRound', data)
-		// tell what cards were played that round
-		io.emit('clearTable')
+	// socket.on('clearRound', function() {
+	// 	// calculate number of points in the round and who won the points 
+	// 	console.log('clear round', roundHistory, pointsInRound)
+	// 	// gameHistory.push(roundHistory)
+	// 	// console.log('clearRound', data)
+	// 	// tell what cards were played that round
+	// 	io.emit('clearTable')
 
-		scoreBoardData.highestHand = {}
-		scoreBoardData.highestHand.cards = []
+	// 	scoreBoardData.highestHand = {}
+	// 	scoreBoardData.highestHand.cards = []
 
-		// reset round data 
-		pointsInRound = 0
-		roundHistory = {}
-		cardHistory = []
-		scoreBoardData.players.forEach(x=> x.playedHand = false)
+	// 	// reset round data 
+	// 	pointsInRound = 0
+	// 	roundHistory = {}
+	// 	cardHistory = []
+	// 	scoreBoardData.players.forEach(x=> x.playedHand = false)
 
-	})
+	// })
 
 	socket.on('disconnect', function () {
 		console.log('A user disconnected: ' + socket.id);
@@ -899,15 +914,38 @@ io.on('connection', function (socket){
 						}
 					}
 					
-					if (firstLiang.name == null) {
-						firstLiang.card = data.card[0]
-						firstLiang.name = data.id
-					}
+					firstLiang.card = data.card[0]
+					firstLiang.name = data.id
+				
 					scoreBoardData.zhuCard = data.card[0]
 
 					liangData.zhuCard = data.card[0]
 					// console.log('zhu flipped', liangData)
 					io.emit('zhuLiangLe', {liangData: liangData})
+				} else if (data.card.length > 1){
+					// check that all cards match 
+					var allMatch = true
+					for (var i = 0; i < data.card.length; i++) {
+						if (data.card[0] != data.card[i]) {
+							allMatch = false
+						}
+					}
+
+					firstLiang.card = data.card[0]
+					firstLiang.name = data.id
+
+					liangData.numberFlipped = data.card.length
+					liangData.name = data.name
+					liangData.flippedBy = data.id  // need to announce who flipped it 
+					
+					liangData.suit = suit
+					scoreBoardData.trumpSuit = suit
+
+					scoreBoardData.zhuCard = data.card[0]
+					liangData.zhuCard = data.card[0]
+
+					io.emit('zhuLiangLe', {liangData: liangData})
+
 				}
 
 			} else if (data.card.length > 1) {
