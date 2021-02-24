@@ -16,6 +16,7 @@ class Scoreboard extends React.Component {
 		this.selectFriendCondition1 = this.selectFriendCondition1.bind(this)
 		this.selectFriendCondition2 = this.selectFriendCondition2.bind(this)
 		this.KouDi = this.KouDi.bind(this)
+		this.showHand = this.showHand.bind(this) 
 
 		this.state = {
 			playerInfo: null,
@@ -39,7 +40,7 @@ class Scoreboard extends React.Component {
 		}
 	}
 
-	submitFriends () {		
+	submitFriends () {	
 		// console.log(this.state.suit1Ask, this.state.val1Ask, this.state.friendCondition1, this.state.suit2Ask, this.state.val2Ask, this.state.friendCondition2)
 		// tell server to broadcast which cards were called for 
 	    event.preventDefault();	    
@@ -107,6 +108,15 @@ class Scoreboard extends React.Component {
 			confirmZhuangJia: false, 
 
 		})
+	}
+
+	showHand() {
+		if (cardHandContainer.visible) {
+			cardHandContainer.setVisible(false)	
+		} else {
+			cardHandContainer.setVisible(true)
+		}
+		
 	}
 
 	KouDi() {
@@ -199,7 +209,8 @@ class Scoreboard extends React.Component {
 				{this.state.amIZhuangJia && this.state.findFriend1 == null && <CallFriends selectVal1={(e) => this.selectVal1(e)} selectVal2={(e) => this.selectVal2(e)} selectSuit1={(e) => this.selectSuit1(e)} selectSuit2={(e) => this.selectSuit2(e)} selectFriendCondition1={(e) => this.selectFriendCondition1(e)} selectFriendCondition2={(e) => this.selectFriendCondition2(e)} suit1Ask={this.state.suit1Ask} suit2Ask={this.state.suit2Ask} val1Ask={this.state.val1Ask} val2Ask={this.state.val2Ask} friendCondition1={this.state.friendCondition1} friendCondition2={this.state.friendCondition2} submitFriends={() => this.submitFriends()} KouDi={()=>this.KouDi()} />}
 				{this.state.findFriend1 != null && <Billboard zhuangJia={this.state.zhuangJiaInfo.name} findFriend1={this.state.findFriend1} findFriend2={this.state.findFriend2} />}
 				{this.state.name == '' && <PlayerName setName={() => this.setName()} name={this.state.name}/>}
-				{this.state.scoreBoard && <Rankings score={this.state.scoreBoard} level={this.state.level}/>}				
+				{this.state.scoreBoard && <Rankings score={this.state.scoreBoard} level={this.state.level}/>}
+				<ShowCards showHand={() => this.showHand()} />				
 			</div>
 			)
 	}
@@ -282,6 +293,13 @@ function PlayerName(props){
 		)
 	
 }
+
+function ShowCards(props){
+	return (
+		<button type='button' onClick={props.showHand}>Show/Hide Cards</button>
+		)
+}
+
 
 function Rankings (props) {
 	return (
