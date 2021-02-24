@@ -493,11 +493,12 @@ function playHand() {
 	console.log(dropZoneCardsSprites)
 	console.log(dropZoneCards)
 	console.log(yourHandList)
-	
+
+	var remaining = yourHandList
 	for (var i = 0; i < dropZoneCards.length; i++) {
-		var remaining = yourHandList.filter(x=>x.card != dropZoneCards[i])
+		var remaining = remaining.filter(x=>x.card != dropZoneCards[i])
 	}
-	console.log(remaining)
+	// console.log(remaining)
 	socket.emit('can I go', {player: playerid, cards: dropZoneCards, remainingCards: remaining})	
 }
 
