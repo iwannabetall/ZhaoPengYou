@@ -626,7 +626,6 @@ io.on('connection', function (socket){
 					followedSuit = true
 					console.log('lead with zhu', followedSuit)
 				} else if (scoreBoardData.firstSuit != 'zhu'){
-					console.log(!remainingCardStats.suits[scoreBoardData.firstSuit] )
 					// you either follow suit or are out of the suit 
 					followedSuit = playedStats.allSameSuit && Object.keys(playedStats.suits)[0] == scoreBoardData.firstSuit ? true : !remainingCardStats.suits[scoreBoardData.firstSuit] ? true : false
 

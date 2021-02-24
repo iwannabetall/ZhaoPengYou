@@ -116,9 +116,13 @@ class Scoreboard extends React.Component {
 			var playedInd = yourHandList.map(x=>x.card).indexOf(kouDiCards[i])	
 			yourHandList.splice(playedInd, 1)
 		}
+
+		maxScroll = (yourHandList.length * 30)/5
+		sortHand()
+		// console.log(yourHandList)
 		dropZoneCardsTracker = []
 		dropZoneCards = []
-		console.log(dropZoneCardsSprites)
+		// console.log(dropZoneCardsSprites)
 		dropZoneCardsSprites = []
 		socket.emit('kouDi', {kouDiCards})
 		console.log('kouDi', yourHandList, kouDiCards)

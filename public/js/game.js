@@ -244,7 +244,7 @@ function create ()
 	})
 
 	this.input.on('gameobjectdown', function (pointer, gameObject) {
-		console.log(gameObject.getData('type'), gameObject.type, gameObject.getData('card'))
+		// console.log(gameObject.getData('type'), gameObject.type, gameObject.getData('card'))
 		
 		// when picking avatars at the beg
 		if (gameObject.getData('group') == 'avatar') {
@@ -322,7 +322,7 @@ function create ()
 
 	    }
 	    
-	    console.log(gameObject.texture.key)
+	    // console.log(gameObject.texture.key)
 	//     // self.children.bringToTop(gameObject);
 	})
 
@@ -380,13 +380,12 @@ function create ()
 
 	socket.on('send bottom 8', (cards) => {
 		console.log(cards.bottom8Cards)
-		for (var i = 0; i < cards.bottom8Cards.length; i++) {
-			var newCard = this.add.sprite(30 * (cards.numCardsInHand + i) + 50, 600, cards.bottom8Cards[i].card).setScale(cardSize, cardSize).setName(`${cards.bottom8Cards[i].card}${cards.bottom8Cards[i].deck}`).setInteractive()
-			newCard.setData('card', 'inHand')
-			yourHand.push(newCard)	
-		}
-		
 
+		yourHandList = yourHandList.concat(cards.bottom8Cards)
+
+		sortHand()
+		maxScroll = (yourHandList.length * 30)/5		
+		
 	})
 
 	socket.on('cardPlayed', (handPlayed)=> {
@@ -413,6 +412,7 @@ function create ()
 			cardsPlayed.push(card)
 			// console.log(card)
 		}
+
 		console.log(cardsPlayed)
 	})
 
@@ -520,7 +520,7 @@ function startCardDraw() {
 	console.log('it works')
 }
 
-function sortHand(cards, currentCardObj) {
+function sortHand() {
 
 	// pass zhu in as parameter 
 	// console.log(yourHand)
