@@ -121,7 +121,7 @@ class Scoreboard extends React.Component {
 	}	
 
 	playTheSmaller() {
-
+		
 	}
 
 	showHand() {
