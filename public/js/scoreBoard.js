@@ -15,8 +15,11 @@ class Scoreboard extends React.Component {
 		this.selectVal2 = this.selectVal2.bind(this)
 		this.selectFriendCondition1 = this.selectFriendCondition1.bind(this)
 		this.selectFriendCondition2 = this.selectFriendCondition2.bind(this)
-		this.KouDi = this.KouDi.bind(this)
+		this.kouDi = this.kouDi.bind(this)
 		this.showHand = this.showHand.bind(this) 
+		this.liang = this.liang.bind(this)
+		this.setZhuang = this.setZhuang.bind(this)
+		this.playTheSmaller = this.playTheSmaller.bind(this)
 
 		this.state = {
 			playerInfo: null,
@@ -41,11 +44,18 @@ class Scoreboard extends React.Component {
 	}
 
 	submitFriends () {	
-		// console.log(this.state.suit1Ask, this.state.val1Ask, this.state.friendCondition1, this.state.suit2Ask, this.state.val2Ask, this.state.friendCondition2)
-		// tell server to broadcast which cards were called for 
-	    event.preventDefault();	    
-		socket.emit('call friends', {firstAskVal: this.state.val1Ask, firstAskSuit: this.state.suit1Ask, condition1: this.state.friendCondition1, secondAskVal: this.state.val2Ask, secondAskSuit: this.state.suit2Ask, condition2: this.state.friendCondition2})
+		console.log(this.state.suit1Ask, this.state.val1Ask, this.state.friendCondition1, this.state.suit2Ask, this.state.val2Ask, this.state.friendCondition2)
 
+		// tell server to broadcast which cards were called for 
+	    event.preventDefault();	 
+
+	    // don't let people call zhu suit 
+	    if (this.state.suit1Ask != this.state.zhuSuit && this.state.suit2Ask != this.state.zhuSuit) {
+
+	    	socket.emit('call friends', {firstAskVal: this.state.val1Ask, firstAskSuit: this.state.suit1Ask, condition1: this.state.friendCondition1, secondAskVal: this.state.val2Ask, secondAskSuit: this.state.suit2Ask, condition2: this.state.friendCondition2})	
+
+	    }
+		
 	}
 
 	selectSuit1 (e){
@@ -108,6 +118,10 @@ class Scoreboard extends React.Component {
 			confirmZhuangJia: false, 
 
 		})
+	}	
+
+	playTheSmaller() {
+
 	}
 
 	showHand() {
@@ -119,7 +133,7 @@ class Scoreboard extends React.Component {
 		
 	}
 
-	KouDi() {
+	kouDi() {
 		kouDiSprites.forEach((card)=> card.destroy())
 
 		for (var i = 0; i < kouDiCards.length; i++) {
@@ -136,6 +150,16 @@ class Scoreboard extends React.Component {
 		dropZoneCardsSprites = []
 		socket.emit('kouDi', {kouDiCards})
 		console.log('kouDi', yourHandList, kouDiCards)
+	}
+
+	liang(){
+		var clicker = getPlayerById()
+		socket.emit('liang', {'card': last2ClickedCards, id: playerid, name: clicker})		
+	}
+
+	setZhuang() {
+		// allows zhuang to kou di 
+		socket.emit('set zhuang', {id: currentZhuangId, name: currentZhuang})
 	}
 
 	componentDidMount() {
@@ -157,7 +181,8 @@ class Scoreboard extends React.Component {
     	socket.on('updateScore', (data)=> {
     		console.log(data)
     		this.setState({
-    			scoreBoard: data.scoreBoard
+    			scoreBoard: data.scoreBoard,
+    			zhuSuit: data.scoreBoard.zhuCard.split('_')[2]
     		})
     	})
 
@@ -206,11 +231,13 @@ class Scoreboard extends React.Component {
 				{this.state.confirmZhuangJia && <div> 
 						<Modal zhuangJia={this.state.zhuangJiaInfo.name} reject={() => this.rejectZhuang()} accept={() => this.acceptZhuang()}/>						
 					</div>}
-				{this.state.amIZhuangJia && this.state.findFriend1 == null && <CallFriends selectVal1={(e) => this.selectVal1(e)} selectVal2={(e) => this.selectVal2(e)} selectSuit1={(e) => this.selectSuit1(e)} selectSuit2={(e) => this.selectSuit2(e)} selectFriendCondition1={(e) => this.selectFriendCondition1(e)} selectFriendCondition2={(e) => this.selectFriendCondition2(e)} suit1Ask={this.state.suit1Ask} suit2Ask={this.state.suit2Ask} val1Ask={this.state.val1Ask} val2Ask={this.state.val2Ask} friendCondition1={this.state.friendCondition1} friendCondition2={this.state.friendCondition2} submitFriends={() => this.submitFriends()} KouDi={()=>this.KouDi()} />}
+				{this.state.amIZhuangJia && this.state.findFriend1 == null && <CallFriends selectVal1={(e) => this.selectVal1(e)} selectVal2={(e) => this.selectVal2(e)} selectSuit1={(e) => this.selectSuit1(e)} selectSuit2={(e) => this.selectSuit2(e)} selectFriendCondition1={(e) => this.selectFriendCondition1(e)} selectFriendCondition2={(e) => this.selectFriendCondition2(e)} suit1Ask={this.state.suit1Ask} suit2Ask={this.state.suit2Ask} val1Ask={this.state.val1Ask} val2Ask={this.state.val2Ask} friendCondition1={this.state.friendCondition1} friendCondition2={this.state.friendCondition2} submitFriends={() => this.submitFriends()} kouDi={()=>this.kouDi()} />}
 				{this.state.findFriend1 != null && <Billboard zhuangJia={this.state.zhuangJiaInfo.name} findFriend1={this.state.findFriend1} findFriend2={this.state.findFriend2} />}
 				{this.state.name == '' && <PlayerName setName={() => this.setName()} name={this.state.name}/>}
 				{this.state.scoreBoard && <Rankings score={this.state.scoreBoard} level={this.state.level}/>}
-				<ShowCards showHand={() => this.showHand()} />				
+				<ZhuangJia liang={()=> this.liang()} setZhuang={() => this.setZhuang()}/>
+				<InGame showHand={() => this.showHand()} />				
+
 			</div>
 			)
 	}
@@ -229,7 +256,7 @@ function CallFriends (props) {
 
 	return (<div className = 'callFriends'>
 				<h2>Kou Di </h2>
-				<button onClick={props.KouDi}>Kou Di </button> 
+				<button onClick={props.kouDi}>Kou Di </button> 
 
 				<h2>Call Your Friends</h2>
 				<div>
@@ -261,8 +288,7 @@ function CallFriends (props) {
 						</div>
 						<input type='submit' value='Call Your Friends!'/> 
 					</form>
-				 </div>
-				
+				 </div>				
 			</div>)
 }
 
@@ -294,9 +320,12 @@ function PlayerName(props){
 	
 }
 
-function ShowCards(props){
+function InGame(props){
 	return (
-		<button type='button' onClick={props.showHand}>Show/Hide Cards</button>
+		<div className='ingame'>
+			<button type='button' onClick={props.showHand}>Show/Hide Cards</button>
+			<button type='button' onClick={props.playTheSmaller}>Force the smaller hand</button>
+		</div>
 		)
 }
 
@@ -311,6 +340,15 @@ function Rankings (props) {
 				{props.score.players.filter(x=>x.joinedZhuang == false).map(player=><div key={player.id}>{player.name}  {player.points}</div>)}
 			</div>
 		)
+}
+
+function ZhuangJia(props){
+	return (
+		<div>
+			<button onClick={props.liang}>Liang</button>
+			<button onClick={props.setZhuang}>Set ZhuangJia</button>
+		</div>
+	)
 }
 
 

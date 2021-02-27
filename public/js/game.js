@@ -228,7 +228,7 @@ function create ()
 		}, 1500)
 			
 		maxScroll = (data.count * 30)/5
-		console.log(maxScroll)
+		// console.log(maxScroll)
         // yourHand.add(card)
         // console.log(yourHandList)
         // card.on('pointerdown', function(pointer, localX, localY, event) {
