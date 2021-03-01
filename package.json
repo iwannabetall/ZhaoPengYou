@@ -1,0 +1,23 @@
+{
+  "name": "zhaopengyou",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iwannabetall/ZhaoPengYou.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/iwannabetall/ZhaoPengYou/issues"
+  },
+  "homepage": "https://github.com/iwannabetall/ZhaoPengYou#readme",
+  "dependencies": {
+    "react": "^17.0.1"
+  }
+}
