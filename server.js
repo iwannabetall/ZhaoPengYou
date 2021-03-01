@@ -4,6 +4,9 @@ const http = require('http')
 
 var app = express();
 
+//Port from environment variable or default - 4001
+const port = process.env.PORT || 3000;
+
 const server = http.createServer(app); 
 
 const io = socketIo(server, {
@@ -1021,6 +1024,6 @@ io.on('connection', function (socket){
 	// });
 });
 
-server.listen(3000, function () {
+server.listen(port, function () {
 	console.log('Server started!');
 });
