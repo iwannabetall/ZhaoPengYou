@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/iwannabetall/ZhaoPengYou#readme",
   "dependencies": {
-    "react": "^17.0.1"
+    "react": "^17.0.1",
+    "socket.io": "^3.1.2"
   }
 }
