@@ -603,71 +603,74 @@ io.on('connection', function (socket){
 
 		var playedCards = cardHand.cards.map(x=>x.card)
 
-		// check see that it's that player's turn to play their hand, dont let people play out of order		and don't let ppl play out of suit 
-		// make sure theyve played the right number of cards or that they're the first to play
-		if (cardHand.player == scoreBoardData.whoseTurn && (playedCards.length == scoreBoardData.highestHand.cards.length || scoreBoardData.highestHand.cards.length == 0)) {
+		if (cardHand.cards.length > 0) {
 
-			var followedSuit = false
+			// check see that it's that player's turn to play their hand, dont let people play out of order		and don't let ppl play out of suit 
+			// make sure theyve played the right number of cards or that they're the first to play
+			if (cardHand.player == scoreBoardData.whoseTurn && (playedCards.length == scoreBoardData.highestHand.cards.length || scoreBoardData.highestHand.cards.length == 0)) {
 
-			if (scoreBoardData.players.filter(x=>x.playedHand == true).length == 0) {
-				// first person played, set them as highest hand
-				// first play has to be all the same suit 
-				scoreBoardData.highestHand.playedBy = cardHand.player
-				scoreBoardData.highestHand.cards = playedCards.sort()
-				scoreBoardData.highestHand.cardStats = getCardStats(playedCards, scoreBoardData.zhuCard)
-					
-				// set what leading suit is to make sure ppl follow suit later
-				var firstSuit = scoreBoardData.highestHand.cardStats.allZhu ? 'zhu' : Object.keys(scoreBoardData.highestHand.cardStats.suits)[0]
-				scoreBoardData.firstSuit = firstSuit
+				var followedSuit = false
 
-				followedSuit = true
-			} else {
-				// for all hands played after the first person
-				// need to make sure that they play either correct suit or zhu pai or are out of suit if they play zhu pai 
-				// check that they followed suit or dont have that suit if theyre not going first 
-				var playedStats = getCardStats(playedCards, scoreBoardData.zhuCard)
-				var remainingCardStats = getCardStats(cardHand.remainingCards.map(x=>x.card), scoreBoardData.zhuCard)
-
-
-				if (playedStats.allZhu && scoreBoardData.firstSuit != 'zhu') {
-					// make sure that they're out of cards of the suit theyre supposed to play if theyre trying to bi
-					followedSuit = cardHand.remainingCards.map(x=>x.card.split('_')[2]).filter(x=>x == scoreBoardData.firstSuit).length == 0 ? true : false
-
-					var errMsg = !followedSuit ? `You cannot bi while you still have ${scoreBoardData.firstSuit} in your hand.` : ''
-					console.log('bi attempt ok? ', followedSuit)
-				} else if (!playedStats.allZhu && scoreBoardData.firstSuit == 'zhu') {
-					// if they lead wit zhu, make sure they dont have zhu left 		
-					followedSuit = remainingCardStats.trumpCards == 0 ? true : false
-					var errMsg = !followedSuit ? "Check your hand and play a trump card. Diao Zhu." : ''
-					console.log('out of zhu', followedSuit)
-				} else if (playedStats.allZhu && scoreBoardData.firstSuit == 'zhu'){
-					// leading suit is fu card, just check if suit matches 
-					followedSuit = true
-					console.log('lead with zhu', followedSuit)
-				} else if (scoreBoardData.firstSuit != 'zhu'){
-					// you either follow suit or are out of the suit 
-					followedSuit = playedStats.allSameSuit && Object.keys(playedStats.suits)[0] == scoreBoardData.firstSuit ? true : !remainingCardStats.suits[scoreBoardData.firstSuit] ? true : false
-
-					var errMsg = !followedSuit ? `Check your hand and play your ${scoreBoardData.firstSuit}` : ''
-
-					console.log('regular card play follow suit? ', followedSuit, scoreBoardData.firstSuit, Object.keys(playedStats.suits)[0])
-					console.log('remaining cards', !remainingCardStats.suits[scoreBoardData.firstSuit])
-				}
-			}
+				if (scoreBoardData.players.filter(x=>x.playedHand == true).length == 0) {
+					// first person played, set them as highest hand
+					// first play has to be all the same suit 
+					scoreBoardData.highestHand.playedBy = cardHand.player
+					scoreBoardData.highestHand.cards = playedCards.sort()
+					scoreBoardData.highestHand.cardStats = getCardStats(playedCards, scoreBoardData.zhuCard)
 						
-			if (followedSuit){
-				socket.emit('play your cards')		
+					// set what leading suit is to make sure ppl follow suit later
+					var firstSuit = scoreBoardData.highestHand.cardStats.allZhu ? 'zhu' : Object.keys(scoreBoardData.highestHand.cardStats.suits)[0]
+					scoreBoardData.firstSuit = firstSuit
+
+					followedSuit = true
+				} else {
+					// for all hands played after the first person
+					// need to make sure that they play either correct suit or zhu pai or are out of suit if they play zhu pai 
+					// check that they followed suit or dont have that suit if theyre not going first 
+					var playedStats = getCardStats(playedCards, scoreBoardData.zhuCard)
+					var remainingCardStats = getCardStats(cardHand.remainingCards.map(x=>x.card), scoreBoardData.zhuCard)
+
+
+					if (playedStats.allZhu && scoreBoardData.firstSuit != 'zhu') {
+						// make sure that they're out of cards of the suit theyre supposed to play if theyre trying to bi
+						followedSuit = cardHand.remainingCards.map(x=>x.card.split('_')[2]).filter(x=>x == scoreBoardData.firstSuit).length == 0 ? true : false
+
+						var errMsg = !followedSuit ? `You cannot bi while you still have ${scoreBoardData.firstSuit} in your hand.` : ''
+						console.log('bi attempt ok? ', followedSuit)
+					} else if (!playedStats.allZhu && scoreBoardData.firstSuit == 'zhu') {
+						// if they lead wit zhu, make sure they dont have zhu left 		
+						followedSuit = remainingCardStats.trumpCards == 0 ? true : false
+						var errMsg = !followedSuit ? "Check your hand and play a trump card. Diao Zhu." : ''
+						console.log('out of zhu', followedSuit)
+					} else if (playedStats.allZhu && scoreBoardData.firstSuit == 'zhu'){
+						// leading suit is fu card, just check if suit matches 
+						followedSuit = true
+						console.log('lead with zhu', followedSuit)
+					} else if (scoreBoardData.firstSuit != 'zhu'){
+						// you either follow suit or are out of the suit 
+						followedSuit = playedStats.allSameSuit && Object.keys(playedStats.suits)[0] == scoreBoardData.firstSuit ? true : !remainingCardStats.suits[scoreBoardData.firstSuit] ? true : false
+
+						var errMsg = !followedSuit ? `Check your hand and play your ${scoreBoardData.firstSuit}` : ''
+
+						console.log('regular card play follow suit? ', followedSuit, scoreBoardData.firstSuit, Object.keys(playedStats.suits)[0])
+						console.log('remaining cards', !remainingCardStats.suits[scoreBoardData.firstSuit])
+					}
+				}
+							
+				if (followedSuit){
+					socket.emit('play your cards')		
+				} else {
+					io.to(cardHand.player).emit('error', errMsg)
+					console.log('follow suit')
+				}
+			} else if (playedCards.length != scoreBoardData.highestHand.cards.length) {
+				// 
+				console.log('not the right number of cards')			
+				console.log(playedCards, scoreBoardData.highestHand.cards, scoreBoardData.whoseTurn, scoreBoardData.highestHand.cards.length == 0)
+				
 			} else {
-				io.to(cardHand.player).emit('error', errMsg)
-				console.log('follow suit')
+				console.log('not your turn')
 			}
-		} else if (playedCards.length != scoreBoardData.highestHand.cards.length) {
-			// 
-			console.log('not the right number of cards')			
-			console.log(playedCards, scoreBoardData.highestHand.cards, scoreBoardData.whoseTurn, scoreBoardData.highestHand.cards.length == 0)
-			
-		} else {
-			console.log('not your turn')
 		}
 		
 	})
@@ -682,34 +685,47 @@ io.on('connection', function (socket){
 
 		var validChallenge = false
 
+		// then make sure that the challenger has higher cards for the cards they challenge 
 		for (var i = 0; i < cardHistory[0].stats.patternType.length; i++) {
 
-			console.log('match pattern', challengeStats.patternType[0], cardHistory[0].stats.patternType[i])
+			// console.log('match pattern', challengeStats.patternType[0], cardHistory[0].stats.patternType[i])
 			if (challengeStats.patternType[0] == cardHistory[0].stats.patternType[i] && higherHand.length == lowerHand.length){
 				validChallenge = true
 			}
 			
 		}
-		
+			
 		if (validChallenge){
+
+			console.log("take it back", cardHistory)
+			
 			var origStats = getCardStats(lowerHand, scoreBoardData.zhuCard)
 
 			var challengeHand = beatHand(origStats, challengeStats, false, scoreBoardData.zhuCard)
+
 			if (challengeHand) {
-				io.emit('redo round', { cardHistory: cardHistory, lowerHand: cards.lowerHand })
+				// send id of first person 
+				io.emit('play smaller', { cardHistory: cardHistory})
 				// return cards 
 				for (var j = 0; j < cardHistory.length; j++) {
-					io.to(cardHistory[j].player).emit('return cards', {cards: cardHistory[j].cards})
+					io.to(cardHistory[j].player).emit('return cards', {cards: cardHistory[j].cards, lowerHand: cards.lowerHand, lowerHandId: cardHistory[0].player})
 						
 				}
-				
+
+				// reset data
+				scoreBoardData.highestHand = {}
+				scoreBoardData.highestHand.cards = []
+				scoreBoardData.whoseTurn = cardHistory[0].player
+
+				// reset round data 
+				pointsInRound = 0
+				roundHistory = {}
+				cardHistory = []
+				scoreBoardData.players.forEach(x=> x.playedHand = false)
 
 			}
-
 			// reset card/round history
-			console.log("take it back", cardHistory)
-
-			console.log(cardHistory[0].stats)
+			// console.log(cardHistory[0].stats)
 			console.log('challengeHand', challengeHand)
 			console.log('challengeStats', challengeStats)
 			
@@ -887,7 +903,7 @@ io.on('connection', function (socket){
 		// need to track scores by team once teams are found 
 
 		io.emit('updateScore', {scoreBoard: scoreBoardData})
-		io.emit('cardPlayed', {cards: playedCards, player: cardHand.player, points: pointsInRound, detailed: cardHand.cards});			
+		io.emit('cardPlayed', {cards: playedCards, player: cardHand.player, points: pointsInRound, detailed: cardHand.cards});
 		
 	});
 

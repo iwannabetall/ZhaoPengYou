@@ -139,7 +139,7 @@ function create ()
     // var centerX = this.cameras.main.centerX 
     // var centerY = this.cameras.main.centerY 
     self = this
-    // console.log(self, this)
+    console.log(self, this)
 
     // make sure to use arrow function for call back or "this" gets wrong reference 
 	socket.on('startGame', (data) => {
@@ -425,48 +425,45 @@ function create ()
 		
 	})
 
-	socket.on('redo round', (data) => {
-		// redo round clear screen, return cards to peoples hands and sort their cards?? 
+	socket.on('play smaller', (data) => {
+		// redo round clear screen, 
 		cardsPlayed.forEach((card)=> card.destroy())
 		cardsPlayed = []
 
+		// showPlayedCards(data.lowerHand, data.lowerHandId)
 		// play cards 
 		console.log(data)
 	})
 
 	socket.on("return cards", (data) => {
 		console.log(data)
+		// console.log(yourHandList)
+		// return cards to peoples hands and sort their cards
+		yourHandList = yourHandList.concat(data.cards)
+		sortHand()
+
+		var remaining = yourHandList
+
+		for (var i = 0; i < data.lowerHand.length; i++) {
+			var remaining = remaining.filter(x=>x.card != data.lowerHand[i].card)
+			yourHandList = yourHandList.filter(x=>x.card != data.lowerHand[i].card)
+		}
+
+		dropZoneCards = data.lowerHand
+		
+		socket.emit('can I go', {player: data.lowerHandId, cards: data.lowerHand, remainingCards: remaining})
+
+		// console.log(yourHandList)
+		// console.log(data)
 
 	})
 
 	socket.on('cardPlayed', (handPlayed)=> {
-		var detailedHand = handPlayed.detailed
+		var detailedHand = handPlayed.detailed  
 		var hand = handPlayed.cards
 		var playerId = handPlayed.player
-		// show to everybody which cards server is telling us were played -- place card as if you're at the bottom always 
-		// console.log(this.cameras.main.centerX, this.cameras.main.centerY)
-		// 
-		var cardRound = this.add.group()
-
-
-		var wedge = 2*Math.PI/playerOrder.length // browser user 0 is at 270 degrees and every person after is 360/# of players minus 
-		var playerIndex = playerOrder.indexOf(playerId)
-		// console.log(playerIndex, playerOrder, playerId)
-		var angle = 3 * (Math.PI) / 2 - playerIndex * wedge
-		var radius = 250
-
-		var x = this.cameras.main.centerX + radius * Math.cos(angle) 
-		var y = this.cameras.main.centerY - radius * Math.sin(angle)
-		// console.log(self, this)
-		for (var i = 0; i < detailedHand.length; i++) {
-			console.log(detailedHand[i])
-			// place opponent card on table 
-			var card = this.add.sprite(30 * i + x, y, detailedHand[i].card).setScale(cardSize, cardSize)
-			.setName(`${detailedHand[i].card}${detailedHand[i].deck}`).setData('card', 'oppHand').setInteractive()
-			card.setData('deck', detailedHand[i].deck)
-			cardsPlayed.push(card)
-			// console.log(card)
-		}
+		
+		showPlayedCards(detailedHand, playerId)
 
 		console.log(cardsPlayed)
 	})
@@ -555,6 +552,34 @@ function playHand() {
 	}
 	// console.log(remaining)
 	socket.emit('can I go', {player: playerid, cards: dropZoneCards, remainingCards: remaining})	
+}
+
+function showPlayedCards(detailedHand, playerId) {
+	// detailed hand has deck info 
+	// show to everybody which cards server is telling us were played -- place card as if you're at the bottom always 
+	// console.log(this.cameras.main.centerX, this.cameras.main.centerY)
+	// 
+	var cardRound = self.add.group()
+
+	var wedge = 2*Math.PI/playerOrder.length // browser user 0 is at 270 degrees and every person after is 360/# of players minus 
+	var playerIndex = playerOrder.indexOf(playerId)
+	// console.log(playerIndex, playerOrder, playerId)
+	var angle = 3 * (Math.PI) / 2 - playerIndex * wedge
+	var radius = 250
+
+	var x = self.cameras.main.centerX + radius * Math.cos(angle) 
+	var y = self.cameras.main.centerY - radius * Math.sin(angle)
+	// console.log(self, this)
+	for (var i = 0; i < detailedHand.length; i++) {
+		console.log(detailedHand[i])
+		// place opponent card on table 
+		var card = self.add.sprite(30 * i + x, y, detailedHand[i].card).setScale(cardSize, cardSize)
+		.setName(`${detailedHand[i].card}${detailedHand[i].deck}`).setData('card', 'oppHand').setInteractive()
+		card.setData('deck', detailedHand[i].deck)
+		cardsPlayed.push(card)
+		// console.log(card)
+	}
+
 }
 
 // function clearTable() {
