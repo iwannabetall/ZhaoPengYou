@@ -50,17 +50,21 @@ function update() {
 
 	// L/R arrows slide card hand across screen 
 	// TODO - MAKE SURE TO STOP IF REACH END OF HAND 
-	 if ((cursors.left.isDown || cursors.up.isDown) && cardHandContainer.x < 200)
+	 if (cursors.left.isDown && cardHandContainer.x < 200)
     {
-    	console.log(maxScroll)
-    	console.log(cardHandContainer.x, cardHandContainer.y)
+    	// console.log(maxScroll)
+    	// console.log(cardHandContainer.x, cardHandContainer.y)
         cardHandContainer.x += 6
     }
-    else if ((cursors.right.isDown || cursors.down.isDown) && cardHandContainer.x > -maxScroll)
+    else if (cursors.right.isDown && cardHandContainer.x > -maxScroll)
     {
-    	console.log(maxScroll)
-    	console.log(cardHandContainer.x, cardHandContainer.y)
      	cardHandContainer.x -= 6
+    } else if (cursors.down.isDown && cardHandContainer.y < 250){
+    	cardHandContainer.y += 6
+
+    } else if (cursors.up.isDown  && cardHandContainer.y > -450) {
+    	cardHandContainer.y -= 6
+
     }
 
 }
@@ -69,6 +73,10 @@ var dropZoneCardsTracker = []  // svg names of cards played -- tracks unique car
 // should dropZoneCardsTracker be an array of objects???!  going to make it 2 sep arrays b/c it's easier to filter 
 var dropZoneCards = [] 
 var dropZoneCardsSprites = []  // game objs of cards played
+var cardSmaller = []
+var cardSmallerSprites = []
+var cardSmallerTracker = []
+
 var cardsPlayed = []
 var liangCards = []
 var playerid 
@@ -223,6 +231,7 @@ function create ()
 			card.destroy()
 			newCard = this.add.sprite(30 * data.count + 50, 600, data.card).setScale(cardSize, cardSize).setName(`${data.card}${data.deck}`).setInteractive()
 			newCard.setData('card', 'inHand')
+			newCard.setData('deck', data.deck)
 			yourHand.push(newCard)
 			cardHandContainer.add(newCard)  // can also pass as array
 		}, 1500)
@@ -239,9 +248,9 @@ function create ()
 	})
 	
 
-	this.input.keyboard.on('keydown', function(e) {
+	// this.input.keyboard.on('keydown', function(e) {
 
-	})
+	// })
 
 	this.input.on('gameobjectdown', function (pointer, gameObject) {
 		// console.log(gameObject.getData('type'), gameObject.type, gameObject.getData('card'))
@@ -277,11 +286,11 @@ function create ()
 		    var cardClicked = gameObject.name  // unique id ie 2 of hearts from deck 1
 		    var cardVal = gameObject.texture.key  // ie 2 of hearts 
 		    // console.log(gameObject)
-		    // console.log(cardClicked)
+		    console.log(cardClicked, cardVal, gameObject.getData('deck'))
 		    if (!dropZoneCardsTracker.includes(cardClicked)) {
 		    	// if haven't selected this card yet, move it up, add to selected list 
 		    	gameObject.y = gameObject.y - 20
-		    	dropZoneCards.push(cardVal)  // eg king of spades 
+		    	dropZoneCards.push({card: cardVal, deck: gameObject.getData('deck')})  // eg king of spades 
 		    	dropZoneCardsTracker.push(gameObject.name)  // unique name ie might have 0 or 1 to indicate deck
 		    	dropZoneCardsSprites.push(gameObject)	
 		    	kouDiSprites.push(gameObject)  // dont need cardstracker -- just need one thing 
@@ -300,7 +309,7 @@ function create ()
 		    	var cardIndex = dropZoneCardsTracker.indexOf(cardClicked)	    	
 		    	dropZoneCardsTracker = dropZoneCardsTracker.filter(x=> x != cardClicked)
 
-		    	var removeCardInd = dropZoneCards.indexOf(cardVal)
+		    	var removeCardInd = dropZoneCards.map(x=>x.card).indexOf(cardVal)
 		    	dropZoneCards.splice(removeCardInd, 1)
 		    	kouDiCards.splice(removeCardInd, 1)
 
@@ -316,6 +325,32 @@ function create ()
 		    
 	    }
 
+	    if(gameObject.type == "Sprite" && gameObject.getData('card') == 'oppHand') {
+	    	// gameObject.setTint(0xff0000)
+	    	// selecting opponent card 
+	    	var cardClicked = gameObject.name  // unique id ie 2 of hearts from deck 1
+		    var cardVal = gameObject.texture.key  // ie 2 of hearts 
+		    // console.log(gameObject)
+		    if (!cardSmallerTracker.includes(cardClicked)) {
+		    	gameObject.setTint(0xff0000)
+		    	cardSmaller.push({card: cardVal, deck: gameObject.getData('deck')})  // eg king of spades 
+		    	cardSmallerTracker.push(cardClicked)  // unique name ie might have 0 or 1 to indicate deck
+		    	cardSmallerSprites.push(gameObject)	
+		    	
+		    } else {
+		    	gameObject.clearTint()
+		    	var cardIndex = cardSmallerTracker.indexOf(cardClicked)	    	
+		    	cardSmallerTracker = cardSmallerTracker.filter(x=> x != cardClicked)
+
+		    	var removeCardInd = cardSmaller.map(x=>x.card).indexOf(cardVal)
+		    	cardSmaller.splice(removeCardInd, 1)
+		    	cardSmallerSprites.splice(cardIndex, 1)  // remove gameobject from array
+		    	
+		    }
+		    console.log(cardClicked, cardVal, cardSmaller)
+		    console.log(cardSmallerTracker)
+	    }
+
 	    if (gameObject.getData('card') == 'flip') {
 	    	var clicker = getPlayerById()
 	    	socket.emit('liang', {card: [gameObject.texture.key], id: playerid, name: clicker})
@@ -327,7 +362,9 @@ function create ()
 	})
 
 	this.input.on('gameobjectup', function (pointer, gameObject) {
-		gameObject.clearTint()
+		if(gameObject.type == "Sprite" && gameObject.getData('card') == 'inHand') {
+			gameObject.clearTint()
+		}
 	})
 
 
@@ -388,7 +425,22 @@ function create ()
 		
 	})
 
+	socket.on('redo round', (data) => {
+		// redo round clear screen, return cards to peoples hands and sort their cards?? 
+		cardsPlayed.forEach((card)=> card.destroy())
+		cardsPlayed = []
+
+		// play cards 
+		console.log(data)
+	})
+
+	socket.on("return cards", (data) => {
+		console.log(data)
+
+	})
+
 	socket.on('cardPlayed', (handPlayed)=> {
+		var detailedHand = handPlayed.detailed
 		var hand = handPlayed.cards
 		var playerId = handPlayed.player
 		// show to everybody which cards server is telling us were played -- place card as if you're at the bottom always 
@@ -406,9 +458,12 @@ function create ()
 		var x = this.cameras.main.centerX + radius * Math.cos(angle) 
 		var y = this.cameras.main.centerY - radius * Math.sin(angle)
 		// console.log(self, this)
-		for (var i = 0; i < hand.length; i++) {
-			// console.log(hand[i])
-			var card = this.add.sprite(30 * i + x, y, hand[i]).setScale(cardSize, cardSize)
+		for (var i = 0; i < detailedHand.length; i++) {
+			console.log(detailedHand[i])
+			// place opponent card on table 
+			var card = this.add.sprite(30 * i + x, y, detailedHand[i].card).setScale(cardSize, cardSize)
+			.setName(`${detailedHand[i].card}${detailedHand[i].deck}`).setData('card', 'oppHand').setInteractive()
+			card.setData('deck', detailedHand[i].deck)
 			cardsPlayed.push(card)
 			// console.log(card)
 		}
@@ -465,7 +520,7 @@ function create ()
 	socket.on('play your cards', () => {
 		var lastRound = false
 		for (var i = 0; i < dropZoneCards.length; i++) {
-			var playedInd = yourHandList.map(x=>x.card).indexOf(dropZoneCards[i])	
+			var playedInd = yourHandList.map(x=>x.card).indexOf(dropZoneCards[i].card)	
 			yourHandList.splice(playedInd, 1)
 		}
 		// dropzone cards 
@@ -496,7 +551,7 @@ function playHand() {
 
 	var remaining = yourHandList
 	for (var i = 0; i < dropZoneCards.length; i++) {
-		var remaining = remaining.filter(x=>x.card != dropZoneCards[i])
+		var remaining = remaining.filter(x=>x.card != dropZoneCards[i].card)
 	}
 	// console.log(remaining)
 	socket.emit('can I go', {player: playerid, cards: dropZoneCards, remainingCards: remaining})	
@@ -574,10 +629,13 @@ function sortHand() {
 
 		// console.log(cardName, deck)
 		var sortedCard = self.add.sprite(30 * i + 50, 200, cardName).setScale(cardSize, cardSize).setName(`${cardName}${deck}`).setData('card', 'inHand').setInteractive()
+		sortedCard.setData('deck', deck)
 		// sortedCard.setData('card', 'inHand')
 		cardHandContainer.add(sortedCard)
 		yourHand.push(sortedCard)
 	}
+
+	// cardHandContainer.bringToTop1
 
 	// how do i update yourHandList mid deal w/o missing a card??? --should prob sort server side?? 
 	// reset hand

@@ -121,7 +121,9 @@ class Scoreboard extends React.Component {
 	}	
 
 	playTheSmaller() {
-		
+		console.log(cardSmaller, dropZoneCards)
+		socket.emit('take back hand', {higherHand: dropZoneCards, lowerHand: cardSmaller})
+
 	}
 
 	showHand() {
@@ -236,7 +238,7 @@ class Scoreboard extends React.Component {
 				{this.state.name == '' && <PlayerName setName={() => this.setName()} name={this.state.name}/>}
 				{this.state.scoreBoard && <Rankings score={this.state.scoreBoard} level={this.state.level}/>}
 				<ZhuangJia liang={()=> this.liang()} setZhuang={() => this.setZhuang()}/>
-				<InGame showHand={() => this.showHand()} />				
+				<InGame showHand={() => this.showHand()} playTheSmaller={()=>this.playTheSmaller()}/>
 
 			</div>
 			)

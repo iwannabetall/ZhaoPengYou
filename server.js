@@ -300,6 +300,7 @@ function getCardStats(cards, trumpCard) {
 	cardStats.triples = []
 	cardStats.zimeidui = [] // detect zimeidui, if zimeidui, remove from pairs/triples 
 	cardStats.zimeiduiPattern = []  // need sep freq for zimeidui so 
+	cardStats.patternType = []
 
 	for (var i = 0; i < cards.length; i++){
 		var s = cards[i].split('_')[2]		
@@ -342,10 +343,13 @@ function getCardStats(cards, trumpCard) {
 		freq[cardStats.cards[cardTypes[i]]]++ 
 		if (cardStats.cards[cardTypes[i]] == 1) {
 			cardStats.singles.push(cardTypes[i])
+			cardStats.patternType.push('singles')
 		} else if (cardStats.cards[cardTypes[i]] == 2) {
 			cardStats.pairs.push(cardTypes[i])
+			cardStats.patternType.push('pairs')
 		} else if (cardStats.cards[cardTypes[i]] == 3) {
 			cardStats.triples.push(cardTypes[i])
+			cardStats.patternType.push('triples')
 		}
 	}
 
@@ -367,10 +371,19 @@ function getCardStats(cards, trumpCard) {
 				//create a zimeidui list 
 				if (!zimeiduiVals.includes(zimeidui[i])) {
 					zimeiduiVals.push(zimeidui[i])
+
+					if (!cardStats.patternType.includes('zimeidui')){
+						cardStats.patternType.push('zimeidui')
+					}
+					
 				}
 
 				if (!zimeiduiVals.includes(zimeidui[i+1])) {
 					zimeiduiVals.push(zimeidui[i+1])
+
+					if (!cardStats.patternType.includes('zimeidui')){
+						cardStats.patternType.push('zimeidui')
+					}
 				}
 				cardStats.zimeidui = zimeiduiVals.sort()
 			}
@@ -587,9 +600,12 @@ io.on('connection', function (socket){
 	// })
 
 	socket.on('can I go', function (cardHand) {
+
+		var playedCards = cardHand.cards.map(x=>x.card)
+
 		// check see that it's that player's turn to play their hand, dont let people play out of order		and don't let ppl play out of suit 
-		// make sure theyve played the right number of cards 
-		if (cardHand.player == scoreBoardData.whoseTurn && (cardHand.cards.length == scoreBoardData.highestHand.cards.length || scoreBoardData.highestHand.cards.length == 0)) {
+		// make sure theyve played the right number of cards or that they're the first to play
+		if (cardHand.player == scoreBoardData.whoseTurn && (playedCards.length == scoreBoardData.highestHand.cards.length || scoreBoardData.highestHand.cards.length == 0)) {
 
 			var followedSuit = false
 
@@ -597,8 +613,8 @@ io.on('connection', function (socket){
 				// first person played, set them as highest hand
 				// first play has to be all the same suit 
 				scoreBoardData.highestHand.playedBy = cardHand.player
-				scoreBoardData.highestHand.cards = cardHand.cards.sort()
-				scoreBoardData.highestHand.cardStats = getCardStats(cardHand.cards, scoreBoardData.zhuCard)
+				scoreBoardData.highestHand.cards = playedCards.sort()
+				scoreBoardData.highestHand.cardStats = getCardStats(playedCards, scoreBoardData.zhuCard)
 					
 				// set what leading suit is to make sure ppl follow suit later
 				var firstSuit = scoreBoardData.highestHand.cardStats.allZhu ? 'zhu' : Object.keys(scoreBoardData.highestHand.cardStats.suits)[0]
@@ -609,7 +625,7 @@ io.on('connection', function (socket){
 				// for all hands played after the first person
 				// need to make sure that they play either correct suit or zhu pai or are out of suit if they play zhu pai 
 				// check that they followed suit or dont have that suit if theyre not going first 
-				var playedStats = getCardStats(cardHand.cards, scoreBoardData.zhuCard)
+				var playedStats = getCardStats(playedCards, scoreBoardData.zhuCard)
 				var remainingCardStats = getCardStats(cardHand.remainingCards.map(x=>x.card), scoreBoardData.zhuCard)
 
 
@@ -645,10 +661,10 @@ io.on('connection', function (socket){
 				io.to(cardHand.player).emit('error', errMsg)
 				console.log('follow suit')
 			}
-		} else if (cardHand.cards.length != scoreBoardData.highestHand.cards.length) {
+		} else if (playedCards.length != scoreBoardData.highestHand.cards.length) {
 			// 
 			console.log('not the right number of cards')			
-			console.log(cardHand.cards, scoreBoardData.highestHand.cards, scoreBoardData.whoseTurn, scoreBoardData.highestHand.cards.length == 0)
+			console.log(playedCards, scoreBoardData.highestHand.cards, scoreBoardData.whoseTurn, scoreBoardData.highestHand.cards.length == 0)
 			
 		} else {
 			console.log('not your turn')
@@ -656,12 +672,62 @@ io.on('connection', function (socket){
 		
 	})
 
+	socket.on('take back hand', function(cards) {
+		console.log(cards)
+		// need to make sure that higher hand is higher and that the style matches, ie can't select a pair of a zimeidui
+		var higherHand = cards.higherHand.map(x=>x.card)
+		var lowerHand = cards.lowerHand.map(x=>x.card)
+
+		var challengeStats = getCardStats(higherHand, scoreBoardData.zhuCard)
+
+		var validChallenge = false
+
+		for (var i = 0; i < cardHistory[0].stats.patternType.length; i++) {
+
+			console.log('match pattern', challengeStats.patternType[0], cardHistory[0].stats.patternType[i])
+			if (challengeStats.patternType[0] == cardHistory[0].stats.patternType[i] && higherHand.length == lowerHand.length){
+				validChallenge = true
+			}
+			
+		}
+		
+		if (validChallenge){
+			var origStats = getCardStats(lowerHand, scoreBoardData.zhuCard)
+
+			var challengeHand = beatHand(origStats, challengeStats, false, scoreBoardData.zhuCard)
+			if (challengeHand) {
+				io.emit('redo round', { cardHistory: cardHistory, lowerHand: cards.lowerHand })
+				// return cards 
+				for (var j = 0; j < cardHistory.length; j++) {
+					io.to(cardHistory[j].player).emit('return cards', {cards: cardHistory[j].cards})
+						
+				}
+				
+
+			}
+
+			// reset card/round history
+			console.log("take it back", cardHistory)
+
+			console.log(cardHistory[0].stats)
+			console.log('challengeHand', challengeHand)
+			console.log('challengeStats', challengeStats)
+			
+		}
+
+
+		
+	})
+
 	socket.on('playHand', function (cardHand) {
+
+		var playedCards = cardHand.cards.map(x=>x.card)
+
 		// need to determine 3 main things - whose turn it is, are they joining a team, is it the end of the game
 		// server needs to keep track of what cards are played in a round and who plays it so we can clear the hand later / track for history	 	
 		//array of objects w/keys where user is the key and cards is the value
 
-		var playedStats = getCardStats(cardHand.cards, scoreBoardData.zhuCard)
+		var playedStats = getCardStats(playedCards, scoreBoardData.zhuCard)
 
 		// for non round leading hands, check to see whose is higher
 		// if (followedSuit) {
@@ -673,7 +739,7 @@ io.on('connection', function (socket){
 					// if new highest hand, update data 
 					scoreBoardData.highestHand.cardStats = playedStats
 					scoreBoardData.highestHand.playedBy = cardHand.player
-					scoreBoardData.highestHand.cards = cardHand.cards  
+					scoreBoardData.highestHand.cards = playedCards  
 				}	
 			}
 			
@@ -693,17 +759,18 @@ io.on('connection', function (socket){
 				// if new highest hand, update data 
 				scoreBoardData.highestHand.cardStats = playedStats
 				scoreBoardData.highestHand.playedBy = cardHand.player
-				scoreBoardData.highestHand.cards = cardHand.cards  
+				scoreBoardData.highestHand.cards = playedCards  
 			}	
 		}
 
-		for (var i = 0; i < cardHand.cards.length; i++) { 
-			pointsInRound = pointsInRound + countPoints(cardHand.cards[i])
+		for (var i = 0; i < playedCards.length; i++) { 
+			pointsInRound = pointsInRound + countPoints(playedCards[i])
 		}
 
 		var hand = {}
 		hand.player = cardHand.player
 		hand.cards = cardHand.cards
+		hand.stats = playedStats
 		cardHistory.push(hand)	  
 		roundHistory.points = pointsInRound
 		roundHistory.cardHistory = cardHistory
@@ -754,9 +821,9 @@ io.on('connection', function (socket){
 		if (!teamSet) {
 			// check to see if they're on your team 
 			// (cardsPlayed, cardSought, condition, cardsBefore)
-			var friend1 = areYouOnMyTeam(cardHand.cards, askedFriend1, cardsBefore1)
+			var friend1 = areYouOnMyTeam(playedCards, askedFriend1, cardsBefore1)
 			cardsBefore1 = friend1.cardsBefore
-			var friend2 = areYouOnMyTeam(cardHand.cards, askedFriend2, cardsBefore2)
+			var friend2 = areYouOnMyTeam(playedCards, askedFriend2, cardsBefore2)
 			cardsBefore2 = friend2.cardsBefore
 
 			if (friend1.onTheTeam == true || friend2.onTheTeam == true) {
@@ -820,7 +887,7 @@ io.on('connection', function (socket){
 		// need to track scores by team once teams are found 
 
 		io.emit('updateScore', {scoreBoard: scoreBoardData})
-		io.emit('cardPlayed', {cards: cardHand.cards, player: cardHand.player, points: pointsInRound});			
+		io.emit('cardPlayed', {cards: playedCards, player: cardHand.player, points: pointsInRound, detailed: cardHand.cards});			
 		
 	});
 
