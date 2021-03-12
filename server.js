@@ -1,11 +1,25 @@
+// require('ignore-styles')
+
+// require('@babel/register')({
+//   ignore: [/(node_modules)/],
+//   presets: ['@babel/preset-env', '@babel/preset-react']
+// })
+
+// require("core-js/stable");
+// require("regenerator-runtime/runtime");
+
+const express = require("express");
+const http = require("http");
 const socketIo = require("socket.io")
-const express = require('express');
-const http = require('http')
+const path = require('path')
+// var now = require('performance-now')
+const cors = require("cors");
+var bodyParser = require('body-parser');
 
 var app = express();
 
 //Port from environment variable or default - 4001
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 2000;
 
 const server = http.createServer(app); 
 

@@ -18,8 +18,10 @@
   },
   "homepage": "https://github.com/iwannabetall/ZhaoPengYou#readme",
   "dependencies": {
+    "@reach/router": "^1.3.4",
     "express": "^4.17.1",
     "react": "^17.0.1",
+    "react-router-dom": "^5.2.0",
     "socket.io": "^3.1.2"
   },
   "devDependencies": {
