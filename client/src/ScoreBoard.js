@@ -24,10 +24,11 @@ class Scoreboard extends React.Component {
 		this.setZhuang = this.setZhuang.bind(this)
 		this.playTheSmaller = this.playTheSmaller.bind(this)
 
+		// console.log(window.socket)
 		this.state = {
 			playerInfo: null,
 			name: '',
-			// playerid: null,
+			// window.playerid: null,
 			pointsOnTable: 0,
 			scoreBoard: null,
 			level: 2,
@@ -46,16 +47,16 @@ class Scoreboard extends React.Component {
 		}
 	}
 
-	submitFriends () {	
+	submitFriends (e) {	
 		console.log(this.state.suit1Ask, this.state.val1Ask, this.state.friendCondition1, this.state.suit2Ask, this.state.val2Ask, this.state.friendCondition2)
 
 		// tell server to broadcast which cards were called for 
-	    event.preventDefault();	 
+	    e.preventDefault();	 
 
 	    // don't let people call zhu suit 
 	    if (this.state.suit1Ask != this.state.zhuSuit && this.state.suit2Ask != this.state.zhuSuit) {
 
-	    	socket.emit('call friends', {firstAskVal: this.state.val1Ask, firstAskSuit: this.state.suit1Ask, condition1: this.state.friendCondition1, secondAskVal: this.state.val2Ask, secondAskSuit: this.state.suit2Ask, condition2: this.state.friendCondition2})	
+	    	window.socket.emit('call friends', {firstAskVal: this.state.val1Ask, firstAskSuit: this.state.suit1Ask, condition1: this.state.friendCondition1, secondAskVal: this.state.val2Ask, secondAskSuit: this.state.suit2Ask, condition2: this.state.friendCondition2})	
 
 	    }
 		
@@ -99,16 +100,16 @@ class Scoreboard extends React.Component {
 
 	setName() {
 		var name = document.getElementById('playername').value
-		console.log(name, playerid)
+		console.log(name, window.playerid)
 		this.setState({
 			name: name,
-			// playerid: playerid
+			// window.playerid: window.playerid
 		})
-		socket.emit('set name', {name: name, id: playerid })
+		window.socket.emit('set name', {name: name, id: window.playerid })
 	}
 
 	rejectZhuang() {
-		socket.emit('confirm zhuang', {response: false, zhuang: this.state.zhuangJiaInfo, responseById: playerid, responseByPlayer: this.state.name})
+		window.socket.emit('confirm zhuang', {response: false, zhuang: this.state.zhuangJiaInfo, responseById: window.playerid, responseByPlayer: this.state.name})
 		// responded to confirm zhuang jia 
 		this.setState({
 			confirmZhuangJia: false
@@ -116,7 +117,7 @@ class Scoreboard extends React.Component {
 	}
 
 	acceptZhuang() {
-		socket.emit('confirm zhuang', {response: true, zhuang: this.state.zhuangJiaInfo, responseById: playerid, responseByPlayer: this.state.name})
+		window.socket.emit('confirm zhuang', {response: true, zhuang: this.state.zhuangJiaInfo, responseById: window.playerid, responseByPlayer: this.state.name})
 		this.setState({
 			confirmZhuangJia: false, 
 
@@ -124,66 +125,66 @@ class Scoreboard extends React.Component {
 	}	
 
 	playTheSmaller() {
-		console.log(cardSmaller, dropZoneCards)
-		socket.emit('take back hand', {higherHand: dropZoneCards, lowerHand: cardSmaller})
+		console.log(window.cardSmaller, window.dropZoneCards)
+		window.socket.emit('take back hand', {higherHand: window.dropZoneCards, lowerHand: window.cardSmaller})
 
 	}
 
 	showHand() {
-		if (cardHandContainer.visible) {
-			cardHandContainer.setVisible(false)	
+		if (window.cardHandContainer.visible) {
+			window.cardHandContainer.setVisible(false)	
 		} else {
-			cardHandContainer.setVisible(true)
+			window.cardHandContainer.setVisible(true)
 		}
 		
 	}
 
 	kouDi() {
-		kouDiSprites.forEach((card)=> card.destroy())
+		window.kouDiSprites.forEach((card)=> card.destroy())
 
-		for (var i = 0; i < kouDiCards.length; i++) {
-			var playedInd = yourHandList.map(x=>x.card).indexOf(kouDiCards[i])	
-			yourHandList.splice(playedInd, 1)
+		for (var i = 0; i < window.kouDiCards.length; i++) {
+			var playedInd = window.yourHandList.map(x=>x.card).indexOf(window.kouDiCards[i])	
+			window.yourHandList.splice(playedInd, 1)
 		}
 
-		maxScroll = (yourHandList.length * 30)/5
-		sortHand()
-		// console.log(yourHandList)
-		dropZoneCardsTracker = []
-		dropZoneCards = []
-		// console.log(dropZoneCardsSprites)
-		dropZoneCardsSprites = []
-		socket.emit('kouDi', {kouDiCards})
-		console.log('kouDi', yourHandList, kouDiCards)
+		window.maxScroll = (window.yourHandList.length * 30)/5
+		window.sortHand()
+		// console.log(window.yourHandList)
+		window.dropZoneCardsTracker = []
+		window.dropZoneCards = []
+		// console.log(window.dropZoneCardsSprites)
+		window.dropZoneCardsSprites = []
+		window.socket.emit('kouDi', window.kouDiCards)
+		console.log('kouDi', window.yourHandList, window.kouDiCards)
 	}
 
 	liang(){
-		var clicker = getPlayerById()
-		socket.emit('liang', {'card': last2ClickedCards, id: playerid, name: clicker})		
+		var clicker = window.getPlayerById()
+		window.socket.emit('liang', {'card': window.last2ClickedCards, id: window.playerid, name: clicker})		
 	}
 
 	setZhuang() {
 		// allows zhuang to kou di 
-		socket.emit('set zhuang', {id: currentZhuangId, name: currentZhuang})
+		window.socket.emit('set zhuang', {id: window.currentZhuangId, name: window.currentZhuang})
 	}
 
 	componentDidMount() {
 		// endpoint = this.state.endpoint;  
     	// socket = socketIOClient(endpoint, {transports: ['websocket'], upgrade: false}); 
-    	socket.on('playing order', (data) => {
+    	window.socket.on('playing order', (data) => {
     		this.setState({
 				playerInfo: data
     		})
     		
     	})
 
-    	socket.on('cardPlayed', (data) => {
+    	window.socket.on('cardPlayed', (data) => {
     		this.setState({
     			pointsOnTable: data.points
     		})
     	})
 
-    	socket.on('updateScore', (data)=> {
+    	window.socket.on('updateScore', (data)=> {
     		console.log(data)
     		this.setState({
     			scoreBoard: data.scoreBoard,
@@ -191,7 +192,7 @@ class Scoreboard extends React.Component {
     		})
     	})
 
-    	socket.on('check zhuang', (data)=> {
+    	window.socket.on('check zhuang', (data)=> {
     		// confirm that people are ok with person being zhuang before 
     		this.setState({
     			confirmZhuangJia: true, 
@@ -200,10 +201,10 @@ class Scoreboard extends React.Component {
     		console.log('check zhuang', data)
     	})
 
-    	socket.on('zhuang confirmed', (data) => {
-    		console.log(playerid)
+    	window.socket.on('zhuang confirmed', (data) => {
+    		console.log(window.playerid)
     		console.log(data)
-    		if (data.zhuang.id == playerid) {
+    		if (data.zhuang.id == window.playerid) {
     			this.setState({
     				amIZhuangJia: true
     			})
@@ -215,11 +216,11 @@ class Scoreboard extends React.Component {
     		})
     	})
 
-    	socket.on('zhuang rejected', (data)=> {
+    	window.socket.on('zhuang rejected', (data)=> {
     		console.log('zhuang rejected', data)
     	})
 
-    	socket.on('jiao', (data)=> {
+    	window.socket.on('jiao', (data)=> {
     		// console.log(data)
     		this.setState({
     			findFriend1: `${data.condition1} ${data.firstAskVal} of ${data.firstAskSuit}`, 

@@ -1,6 +1,5 @@
 window.socket = io(); 
 // const socket = require('./helpers/socketConfig')
-
 var config = {
     type: Phaser.AUTO,
     width: 1400,
@@ -71,38 +70,38 @@ function update() {
 
 }
 
-var dropZoneCardsTracker = []  // svg names of cards played -- tracks unique cards ie from which deck 
+window.dropZoneCardsTracker = []  // svg names of cards played -- tracks unique cards ie from which deck 
 // should dropZoneCardsTracker be an array of objects???!  going to make it 2 sep arrays b/c it's easier to filter 
-var dropZoneCards = [] 
-var dropZoneCardsSprites = []  // game objs of cards played
-var cardSmaller = []
-var cardSmallerSprites = []
-var cardSmallerTracker = []
+window.dropZoneCards = [] 
+window.dropZoneCardsSprites = []  // game objs of cards played
+window.cardSmaller = []
+window.cardSmallerSprites = []
+window.cardSmallerTracker = []
 
-var cardsPlayed = []
-var liangCards = []
-var playerid 
-var seatOrder
-var playerOrder
-var playerOrderInfo 
-var playerInfo  // needs to always be synced with server 
-var yourHandList = []  // list of card svg names 
-var yourHand  // sprites
-var self
-var last2ClickedCards = []  // for liang zhu but should really be 3 -- also make sure if clicked 2 zhu, that the most recent one is going to be flipped / make it obvious that 
-var kouDiCards
-var kouDiSprites
-var gameStarted = false  // 
-var zhuangJia // if not set, ask if theyre ok with X as it 
-var currentZhuang
-var currentZhuangId
-var zhuCard //set zhu suit
-var cursors
-var cardHandContainer
+window.cardsPlayed = []
+window.liangCards = []
+window.playerid = ''
+// window.seatOrder = []
+window.playerOrder = []
+window.playerOrderInfo = []
+window.playerInfo  // needs to always be synced with server 
+window.yourHandList = []  // list of card svg names 
+window.yourHand = []  // sprites
+window.self = ''
+window.last2ClickedCards = []  // for liang zhu but should really be 3 -- also make sure if clicked 2 zhu, that the most recent one is going to be flipped / make it obvious that 
+window.kouDiCards = []
+window.kouDiSprites = []
+window.gameStarted = false  // 
+window.zhuangJia = '' // if not set, ask if theyre ok with X as it 
+window.currentZhuang = ''
+window.currentZhuangId = ''
+window.zhuCard = [] //set zhu suit
+window.cursors = ''
+window.cardHandContainer = []
 
-var maxScroll = 500
+window.maxScroll = 500
 
-socket.on('playerid', function(id){	
+window.socket.on('playerid', function(id){	
 	playerid = id
 })
 
@@ -149,7 +148,7 @@ function create ()
 		kouDiCards = []
 		console.log(data)
 		// playerid = data.id 
-		seatOrder = data.order
+		// seatOrder = data.order
 		var players = data.players
 		var playerList = data.players
 		playerInfo = data.playerInfo
@@ -542,7 +541,7 @@ function create ()
 	})
 }
 
-function playHand() {
+window.playHand = function () {
 	console.log(dropZoneCardsTracker)
 	console.log(dropZoneCardsSprites)
 	console.log(dropZoneCards)
@@ -688,7 +687,7 @@ function liang() {
 // 	socket.emit('set name', {name: name, id: playerid })
 // }
 
-function startGame(){
+window.startGame = function (){
 	game = new Phaser.Game(config);
 	// liangGroup.clear(true, true)
 	// liangGroup.forEach((liang)=> liang.destroy())	
