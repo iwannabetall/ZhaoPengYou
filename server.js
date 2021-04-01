@@ -1,25 +1,12 @@
-// require('ignore-styles')
-
-// require('@babel/register')({
-//   ignore: [/(node_modules)/],
-//   presets: ['@babel/preset-env', '@babel/preset-react']
-// })
-
-// require("core-js/stable");
-// require("regenerator-runtime/runtime");
-
-const express = require("express");
-const http = require("http");
 const socketIo = require("socket.io")
-const path = require('path')
-// var now = require('performance-now')
-const cors = require("cors");
-var bodyParser = require('body-parser');
+const express = require('express');
+const http = require('http')
+const webpack = require('webpack');
 
 var app = express();
 
 //Port from environment variable or default - 4001
-const port = process.env.PORT || 2000;
+const port = process.env.PORT || 3000;
 
 const server = http.createServer(app); 
 
@@ -35,6 +22,19 @@ app.use(express.static(__dirname + '/public'));
 app.get('/', function(req, res){
 	res.render('/public/index.html');
 });
+
+const webpackDevMiddleware = require('webpack-dev-middleware');
+
+const config = require('./webpack.config.js');
+const compiler = webpack(config);
+
+// Tell express to use the webpack-dev-middleware and use the webpack.config.js
+// configuration file as a base.
+app.use(
+  webpackDevMiddleware(compiler, {
+    publicPath: config.output.publicPath,
+  })
+);
 
 let players = [];  // player ids 
 var playerInfo = [];
@@ -66,6 +66,7 @@ var cardsBefore1 //= 0 // need to track how many of the cards ie Ace of spades h
 var cardsBefore2 //= 0
 var outsideCondition1  // need to track if the zhuang called for outside first, if they played their ace??  ehh dont think so 
 var outsideCondition2
+var roomId 
 var teamSet = false
 
 var cardVals = ['2','3','4','5','6','7','8','90','910','jack','queen','rking', 'sace'];
@@ -468,6 +469,13 @@ io.on('connection', function (socket){
 	// tell player their socket id when they connect 
 	io.to(socket.id).emit('playerid', socket.id)
 
+	socket.on('new room', function(room) {
+		console.log('room', room)
+		roomId = room
+		socket.join(room)		
+		console.log(socket.room)
+	})
+
 	var randomNames = ['squirtle', 'pikachu', 'snorlax']
 
 	// joinedZhuang to make it easier to determine who is zhuangjia after first; lastRound to determine when the game is over 
@@ -554,7 +562,7 @@ io.on('connection', function (socket){
 	});
 
 	socket.on('start game', function(){
-		io.emit('gameStarted', true)
+		io.to(roomId).emit('gameStarted', true)
 	})
 
 	socket.on('confirm zhuang', function(data){
@@ -562,7 +570,7 @@ io.on('connection', function (socket){
 		var order = players.indexOf(data.zhuang.id)
 		if (data.response == false){
 			// if one person rejects, send message to all players telling them that X is saying wait 
-			io.emit('zhuang rejected', {waitingOn: data.responseByPlayer})
+			io.to(roomId).emit('zhuang rejected', {waitingOn: data.responseByPlayer})
 		} else {
 			confirmZhuang.push(data.responseByPlayer)
 			if (confirmZhuang.length == players.length){
@@ -574,9 +582,9 @@ io.on('connection', function (socket){
 				// remove zhuangjia from the players list, don't need to track for her ?? or just mark her as zhuangjia team and don't display?  prob the latter just in case we wan ot display it later? 	
 				var pts = tallyScoreByTeam(scoreBoardData.players)		
 				console.log(pts)
-				io.emit('zhuang confirmed', {playerInfo: playerInfo, zhuang: data.zhuang})
+				io.to(roomId).emit('zhuang confirmed', {playerInfo: playerInfo, zhuang: data.zhuang})
 				io.to(data.zhuang.id).emit('send bottom 8', {bottom8Cards: bottom8Cards, numCardsInHand: numCardsInHand})
-				io.emit('updateScore', {scoreBoard: scoreBoardData})
+				io.to(roomId).emit('updateScore', {scoreBoard: scoreBoardData})
 			}
 			
 		}
@@ -596,7 +604,7 @@ io.on('connection', function (socket){
 		console.log(askedFriend1, askedFriend1Condition, cardsBefore1)
 		console.log(askedFriend2, askedFriend2Condition, cardsBefore2)
 
-		io.emit('jiao', data)
+		io.to(roomId).emit('jiao', data)
 	})
 
 	// socket.on('round winner', function(data){
@@ -610,7 +618,7 @@ io.on('connection', function (socket){
 	// 	var pts = tallyScoreByTeam(scoreBoardData.players)		
 	// 	console.log(pts)
 
-	// 	io.emit('updateScore', {scoreBoard: scoreBoardData})
+	// 	io.to(roomId).emit('updateScore', {scoreBoard: scoreBoardData})
 	// })
 
 	socket.on('can I go', function (cardHand) {
@@ -672,7 +680,7 @@ io.on('connection', function (socket){
 				}
 							
 				if (followedSuit){
-					socket.emit('play your cards')		
+					socket.to(roomId).emit('play your cards')		
 				} else {
 					io.to(cardHand.player).emit('error', errMsg)
 					console.log('follow suit')
@@ -719,7 +727,7 @@ io.on('connection', function (socket){
 
 			if (challengeHand) {
 				// send id of first person 
-				io.emit('play smaller', { cardHistory: cardHistory})
+				io.to(roomId).emit('play smaller', { cardHistory: cardHistory})
 				// return cards 
 				for (var j = 0; j < cardHistory.length; j++) {
 					io.to(cardHistory[j].player).emit('return cards', {cards: cardHistory[j].cards, lowerHand: cards.lowerHand, lowerHandId: cardHistory[0].player})
@@ -827,7 +835,7 @@ io.on('connection', function (socket){
 
 			// clear the board after 2 seconds 
 			setTimeout(function() {
-				io.emit('clearTable')
+				io.to(roomId).emit('clearTable')
 
 				scoreBoardData.highestHand = {}
 				scoreBoardData.highestHand.cards = []
@@ -916,8 +924,8 @@ io.on('connection', function (socket){
 
 		// need to track scores by team once teams are found 
 
-		io.emit('updateScore', {scoreBoard: scoreBoardData})
-		io.emit('cardPlayed', {cards: playedCards, player: cardHand.player, points: pointsInRound, detailed: cardHand.cards});
+		io.to(roomId).emit('updateScore', {scoreBoard: scoreBoardData})
+		io.to(roomId).emit('cardPlayed', {cards: playedCards, player: cardHand.player, points: pointsInRound, detailed: cardHand.cards});
 		
 	});
 
@@ -926,7 +934,7 @@ io.on('connection', function (socket){
 		kouDiCards = discardedCards
 		
 		// return how many points discarded?? 
-		io.emit('')
+		io.to(roomId).emit('')
 
 	})
 
@@ -936,7 +944,7 @@ io.on('connection', function (socket){
 	// 	// gameHistory.push(roundHistory)
 	// 	// console.log('clearRound', data)
 	// 	// tell what cards were played that round
-	// 	io.emit('clearTable')
+	// 	io.to(roomId).emit('clearTable')
 
 	// 	scoreBoardData.highestHand = {}
 	// 	scoreBoardData.highestHand.cards = []
@@ -971,7 +979,7 @@ io.on('connection', function (socket){
 		playerInfo[order].name = data.name		
 		// scoreBoardData.players[order].name = data.name   // DO I NEED THIS???
 		
-		io.emit('playing order', playerInfo)
+		io.to(roomId).emit('playing order', playerInfo)
 	})
 
 	socket.on('avatar', function(data){
@@ -982,7 +990,7 @@ io.on('connection', function (socket){
 
 	socket.on('set zhuang', function(data) {
 		// console.log('set zhuang', data)
-		io.emit('check zhuang', data)
+		io.to(roomId).emit('check zhuang', data)
 	})
 
 	socket.on('liang', function(data) {
@@ -1021,7 +1029,7 @@ io.on('connection', function (socket){
 
 					liangData.zhuCard = data.card[0]
 					// console.log('zhu flipped', liangData)
-					io.emit('zhuLiangLe', {liangData: liangData})
+					io.to(roomId).emit('zhuLiangLe', {liangData: liangData})
 				} else if (data.card.length > 1){
 					// check that all cards match 
 					var allMatch = true
@@ -1044,7 +1052,7 @@ io.on('connection', function (socket){
 					scoreBoardData.zhuCard = data.card[0]
 					liangData.zhuCard = data.card[0]
 
-					io.emit('zhuLiangLe', {liangData: liangData})
+					io.to(roomId).emit('zhuLiangLe', {liangData: liangData})
 
 				}
 
@@ -1089,13 +1097,13 @@ io.on('connection', function (socket){
 					liangData.zhuCard = data.card[0]
 
 				} else {
-					io.emit('fail', {msg: 'have you already liang'})
+					io.to(roomId).emit('fail', {msg: 'have you already liang'})
 				}
-				io.emit('zhuLiangLe', {liangData: liangData})
+				io.to(roomId).emit('zhuLiangLe', {liangData: liangData})
 
 			} else {
 			// reject message ie invalid card
-				io.emit('fail', {msg: 'what are you doing??'})
+				io.to(roomId).emit('fail', {msg: 'what are you doing??'})
 			}
 		}
 		
@@ -1109,7 +1117,7 @@ io.on('connection', function (socket){
 	//	 // remove player from list when disconnect and update player info 
 	//	 var sockets = player_list.map(x=>x.id)
 	//	 player_list = player_list.filter((x)=>x.id != socket.id)
-	//	 io.emit('join game', player_list)
+	//	 io.to(roomId).emit('join game', player_list)
 
 	//	 if (player_list.length == 0) {
 	//		 // clear chat when everybody leaves

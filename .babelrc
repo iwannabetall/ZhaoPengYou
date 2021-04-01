@@ -1,17 +1,12 @@
 {
-  "presets": ["@babel/preset-react"],
+  "presets": [ 
+  	["@babel/preset-env", { "useBuiltIns": "usage", "debug": true, "corejs": 3, "modules": false }],
+  	 "@babel/preset-react"] ,
   "env": {
     "development": {
       "presets": [["@babel/preset-react", { "development": true }]]
     }
   },
-	"plugins": [
-    ["@babel/plugin-transform-runtime",
-      {
-        "regenerator": true
-      }
-    ]
-  ],
-
 }
+
 
