@@ -19,8 +19,12 @@ const io = socketIo(server, {
 app.set("view options", {layout: false});
 app.use(express.static(__dirname + '/public'));
 
-app.get('/', function(req, res){
-	res.render('/public/index.html');
+// app.get('/', function(req, res){
+// 	res.render('/public/index.html');
+// });
+// tell reach router to serve index.html for all routes
+app.get('*', function(req,res) {
+  res.sendFile(__dirname + '/public/index.html');
 });
 
 const webpackDevMiddleware = require('webpack-dev-middleware');

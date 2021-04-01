@@ -8,7 +8,8 @@ const App = () => {
 	return (
 			<Router>
 				<Landing path='/' />
-				<Scoreboard path='/room/:roomId' />
+				<Scoreboard path='room/:roomId' />
+				<Scoreboard path='test2' />
 			</Router>
 		)
 }
