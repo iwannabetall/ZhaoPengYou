@@ -105,6 +105,10 @@ socket.on('playerid', function(id){
 	playerid = id
 })
 
+socket.on('loadGame', () => {
+	new Phaser.Game(config);
+})
+
 function create ()
     {
 
@@ -480,7 +484,7 @@ function create ()
 	socket.on('zhuLiangLe', (data)=> {
 		if (liangGroup.children.entries.length > 0) {
 			liangGroup.clear(true, true)
-		}
+		}		
 		console.log(data)
 		var gameInfo = data.liangData 
 		currentZhuangId = gameInfo.flippedBy
@@ -594,18 +598,18 @@ function clearRound(){
 	cardsPlayed = []
 }
 
-function startCardDraw() {
-	setTimeout(function() {
-		socket.emit('draw cards')	
-	}, 1000)
-	console.log('it works')
-}
+// function startCardDraw() {
+// 	setTimeout(function() {
+// 		socket.emit('draw cards')	
+// 	}, 1000)
+// 	console.log('it works')
+// }
 
 function sortHand() {
 
 	// pass zhu in as parameter 
 	// console.log(yourHand)
-	console.log(yourHandList)
+	// console.log(yourHandList)
 
 	yourHand.forEach((card)=> card.destroy())
 
@@ -687,13 +691,13 @@ function liang() {
 // 	socket.emit('set name', {name: name, id: playerid })
 // }
 
-function startGame(){
+// function startGame(){
 	
-	new Phaser.Game(config);
-	// liangGroup.clear(true, true)
-	// liangGroup.forEach((liang)=> liang.destroy())	
-	socket.emit('start game')
-}
+// 	new Phaser.Game(config);
+// 	// liangGroup.clear(true, true)
+// 	// liangGroup.forEach((liang)=> liang.destroy())	
+// 	socket.emit('start game')
+// }
 
 function setZhuang() {	
 	console.log(currentZhuangId, currentZhuang)

@@ -468,6 +468,17 @@ function updateWhoseTurn(gameData, playerid) {
 
 io.on('connection', function (socket){
 
+	// console.log(socket.request.headers.referer)
+	// console.log(socket.request.url)
+
+	var url = socket.request.headers.referer 
+	
+	url = url.split('/room/')
+	if (url.length > 1) {
+		roomId = url[1]
+		socket.join(roomId)
+		// io.to(socket.id).emit('loadGame')
+	}
 	console.log('A user connected: ' + socket.id);
 	
 	// tell player their socket id when they connect 
@@ -476,7 +487,8 @@ io.on('connection', function (socket){
 	socket.on('new room', function(room) {
 		console.log('room', room)
 		roomId = room
-		socket.join(room)		
+		socket.join(room)
+		// io.to(socket.id).emit('loadGame')
 		console.log(socket.room)
 	})
 
@@ -566,7 +578,7 @@ io.on('connection', function (socket){
 	});
 
 	socket.on('start game', function(){
-		io.to(roomId).emit('gameStarted', true)
+		io.in(roomId).emit('gameStarted', true)
 	})
 
 	socket.on('confirm zhuang', function(data){
@@ -574,7 +586,7 @@ io.on('connection', function (socket){
 		var order = players.indexOf(data.zhuang.id)
 		if (data.response == false){
 			// if one person rejects, send message to all players telling them that X is saying wait 
-			io.to(roomId).emit('zhuang rejected', {waitingOn: data.responseByPlayer})
+			io.in(roomId).emit('zhuang rejected', {waitingOn: data.responseByPlayer})
 		} else {
 			confirmZhuang.push(data.responseByPlayer)
 			if (confirmZhuang.length == players.length){
@@ -586,9 +598,9 @@ io.on('connection', function (socket){
 				// remove zhuangjia from the players list, don't need to track for her ?? or just mark her as zhuangjia team and don't display?  prob the latter just in case we wan ot display it later? 	
 				var pts = tallyScoreByTeam(scoreBoardData.players)		
 				console.log(pts)
-				io.to(roomId).emit('zhuang confirmed', {playerInfo: playerInfo, zhuang: data.zhuang})
+				io.in(roomId).emit('zhuang confirmed', {playerInfo: playerInfo, zhuang: data.zhuang})
 				io.to(data.zhuang.id).emit('send bottom 8', {bottom8Cards: bottom8Cards, numCardsInHand: numCardsInHand})
-				io.to(roomId).emit('updateScore', {scoreBoard: scoreBoardData})
+				io.in(roomId).emit('updateScore', {scoreBoard: scoreBoardData})
 			}
 			
 		}
@@ -608,7 +620,7 @@ io.on('connection', function (socket){
 		console.log(askedFriend1, askedFriend1Condition, cardsBefore1)
 		console.log(askedFriend2, askedFriend2Condition, cardsBefore2)
 
-		io.to(roomId).emit('jiao', data)
+		io.in(roomId).emit('jiao', data)
 	})
 
 	// socket.on('round winner', function(data){
@@ -622,11 +634,11 @@ io.on('connection', function (socket){
 	// 	var pts = tallyScoreByTeam(scoreBoardData.players)		
 	// 	console.log(pts)
 
-	// 	io.to(roomId).emit('updateScore', {scoreBoard: scoreBoardData})
+	// 	io.in(roomId).emit('updateScore', {scoreBoard: scoreBoardData})
 	// })
 
 	socket.on('can I go', function (cardHand) {
-
+		console.log('can i go', cardHand)
 		var playedCards = cardHand.cards.map(x=>x.card)
 
 		if (cardHand.cards.length > 0) {
@@ -731,7 +743,7 @@ io.on('connection', function (socket){
 
 			if (challengeHand) {
 				// send id of first person 
-				io.to(roomId).emit('play smaller', { cardHistory: cardHistory})
+				io.in(roomId).emit('play smaller', { cardHistory: cardHistory})
 				// return cards 
 				for (var j = 0; j < cardHistory.length; j++) {
 					io.to(cardHistory[j].player).emit('return cards', {cards: cardHistory[j].cards, lowerHand: cards.lowerHand, lowerHandId: cardHistory[0].player})
@@ -839,7 +851,7 @@ io.on('connection', function (socket){
 
 			// clear the board after 2 seconds 
 			setTimeout(function() {
-				io.to(roomId).emit('clearTable')
+				io.in(roomId).emit('clearTable')
 
 				scoreBoardData.highestHand = {}
 				scoreBoardData.highestHand.cards = []
@@ -928,8 +940,8 @@ io.on('connection', function (socket){
 
 		// need to track scores by team once teams are found 
 
-		io.to(roomId).emit('updateScore', {scoreBoard: scoreBoardData})
-		io.to(roomId).emit('cardPlayed', {cards: playedCards, player: cardHand.player, points: pointsInRound, detailed: cardHand.cards});
+		io.in(roomId).emit('updateScore', {scoreBoard: scoreBoardData})
+		io.in(roomId).emit('cardPlayed', {cards: playedCards, player: cardHand.player, points: pointsInRound, detailed: cardHand.cards});
 		
 	});
 
@@ -938,7 +950,7 @@ io.on('connection', function (socket){
 		kouDiCards = discardedCards
 		
 		// return how many points discarded?? 
-		io.to(roomId).emit('')
+		io.in(roomId).emit('')
 
 	})
 
@@ -948,7 +960,7 @@ io.on('connection', function (socket){
 	// 	// gameHistory.push(roundHistory)
 	// 	// console.log('clearRound', data)
 	// 	// tell what cards were played that round
-	// 	io.to(roomId).emit('clearTable')
+	// 	io.in(roomId).emit('clearTable')
 
 	// 	scoreBoardData.highestHand = {}
 	// 	scoreBoardData.highestHand.cards = []
@@ -983,7 +995,7 @@ io.on('connection', function (socket){
 		playerInfo[order].name = data.name		
 		// scoreBoardData.players[order].name = data.name   // DO I NEED THIS???
 		
-		io.to(roomId).emit('playing order', playerInfo)
+		io.in(roomId).emit('playing order', playerInfo)
 	})
 
 	socket.on('avatar', function(data){
@@ -994,7 +1006,7 @@ io.on('connection', function (socket){
 
 	socket.on('set zhuang', function(data) {
 		// console.log('set zhuang', data)
-		io.to(roomId).emit('check zhuang', data)
+		io.in(roomId).emit('check zhuang', data)
 	})
 
 	socket.on('liang', function(data) {
@@ -1002,6 +1014,7 @@ io.on('connection', function (socket){
 		// console.log('liang', data)
 		// console.log('liangData', liangData)
 		console.log('liang data', data)
+		console.log('roomid', roomId)
 		var scoreBoardOrder = scoreBoardData.players.map(x => x.id)
 		// update whose turn it is 
 		var p = scoreBoardOrder.indexOf(data.id)
@@ -1033,7 +1046,7 @@ io.on('connection', function (socket){
 
 					liangData.zhuCard = data.card[0]
 					// console.log('zhu flipped', liangData)
-					io.to(roomId).emit('zhuLiangLe', {liangData: liangData})
+					io.in(roomId).emit('zhuLiangLe', {liangData: liangData})
 				} else if (data.card.length > 1){
 					// check that all cards match 
 					var allMatch = true
@@ -1056,7 +1069,7 @@ io.on('connection', function (socket){
 					scoreBoardData.zhuCard = data.card[0]
 					liangData.zhuCard = data.card[0]
 
-					io.to(roomId).emit('zhuLiangLe', {liangData: liangData})
+					io.in(roomId).emit('zhuLiangLe', {liangData: liangData})
 
 				}
 
@@ -1101,13 +1114,13 @@ io.on('connection', function (socket){
 					liangData.zhuCard = data.card[0]
 
 				} else {
-					io.to(roomId).emit('fail', {msg: 'have you already liang'})
+					io.in(roomId).emit('fail', {msg: 'have you already liang'})
 				}
-				io.to(roomId).emit('zhuLiangLe', {liangData: liangData})
+				io.in(roomId).emit('zhuLiangLe', {liangData: liangData})
 
 			} else {
 			// reject message ie invalid card
-				io.to(roomId).emit('fail', {msg: 'what are you doing??'})
+				io.in(roomId).emit('fail', {msg: 'what are you doing??'})
 			}
 		}
 		
@@ -1121,7 +1134,7 @@ io.on('connection', function (socket){
 	//	 // remove player from list when disconnect and update player info 
 	//	 var sockets = player_list.map(x=>x.id)
 	//	 player_list = player_list.filter((x)=>x.id != socket.id)
-	//	 io.to(roomId).emit('join game', player_list)
+	//	 io.in(roomId).emit('join game', player_list)
 
 	//	 if (player_list.length == 0) {
 	//		 // clear chat when everybody leaves

@@ -22,6 +22,9 @@ class Scoreboard extends React.Component {
 		this.liang = this.liang.bind(this)
 		this.setZhuang = this.setZhuang.bind(this)
 		this.playTheSmaller = this.playTheSmaller.bind(this)
+		this.startCardDraw = this.startCardDraw.bind(this)
+		// this.playHand = this.playHand.bind(this)
+		// this.sortHand = this.sortHand.bind(this)
 
 		this.state = {
 			playerInfo: null,
@@ -96,13 +99,15 @@ class Scoreboard extends React.Component {
 		})
 	}
 
-	setName() {
+	setName(e) {
+		e.preventDefault()
 		var name = document.getElementById('playername').value
 		console.log(name, playerid)
 		this.setState({
 			name: name,
 			// playerid: playerid
 		})
+		new Phaser.Game(config);
 		socket.emit('set name', {name: name, id: playerid })
 	}
 
@@ -156,8 +161,16 @@ class Scoreboard extends React.Component {
 		console.log('kouDi', yourHandList, kouDiCards)
 	}
 
+	startCardDraw() {
+		setTimeout(function() {
+			socket.emit('draw cards')	
+		}, 1000)
+		console.log('it works')
+	}
+
 	liang(){
 		var clicker = getPlayerById()
+		console.log(last2ClickedCards)
 		socket.emit('liang', {'card': last2ClickedCards, id: playerid, name: clicker})		
 	}
 
@@ -226,13 +239,51 @@ class Scoreboard extends React.Component {
     		})
     	})
 
+		socket.on('send bottom 8', (cards) => {
+			console.log(cards.bottom8Cards)
+
+			yourHandList = yourHandList.concat(cards.bottom8Cards)
+
+			sortHand()
+			maxScroll = (yourHandList.length * 30)/5		
+			
+		})
+
+		socket.on("return cards", (data) => {
+			console.log(data)
+			// console.log(yourHandList)
+			// return cards to peoples hands and sort their cards
+			yourHandList = yourHandList.concat(data.cards)
+			sortHand()
+
+			var remaining = yourHandList
+
+			for (var i = 0; i < data.lowerHand.length; i++) {
+				var remaining = remaining.filter(x=>x.card != data.lowerHand[i].card)
+				yourHandList = yourHandList.filter(x=>x.card != data.lowerHand[i].card)
+			}
+
+			dropZoneCards = data.lowerHand
+
+			socket.emit('can I go', {player: data.lowerHandId, cards: data.lowerHand, remainingCards: remaining})
+
+			// console.log(yourHandList)
+			// console.log(data)
+
+		})
+
+
+
 	}
 
 	// {this.state.playerInfo && <PlayerOrder players={this.state.playerInfo}/>}
-	// {this.state.name == '' && <PlayerName setName={() => this.setName()} name={this.state.name}/>}
+	
 	render() {
 		return (			
 			<div>
+				{this.state.name == '' && <PlayerName setName={(e) => this.setName(e)} name={this.state.name}/>}
+
+				{this.state.name != '' && <div>
 				{this.state.confirmZhuangJia && <div> 
 						<Modal zhuangJia={this.state.zhuangJiaInfo.name} reject={() => this.rejectZhuang()} accept={() => this.acceptZhuang()}/>						
 					</div>}
@@ -241,6 +292,8 @@ class Scoreboard extends React.Component {
 				{this.state.scoreBoard && <Rankings score={this.state.scoreBoard} level={this.state.level}/>}
 				<ZhuangJia liang={()=> this.liang()} setZhuang={() => this.setZhuang()}/>
 				<InGame showHand={() => this.showHand()} playTheSmaller={()=>this.playTheSmaller()}/>
+				<CardMoves startCardDraw={() => this.startCardDraw()} playHand={()=> window.playHand()} sortHand={()=> window.sortHand()}/>
+				</div>}
 
 			</div>
 			)
@@ -248,6 +301,15 @@ class Scoreboard extends React.Component {
 
 }
 // 
+function CardMoves(props){
+	return (<div>
+			<button onClick={props.startCardDraw}> Draw Cards </button>
+			<button onClick={props.playHand}> Play Hand </button>
+			<button onClick={props.sortHand}> Sort Hand </button>
+		</div>
+		)
+}
+
 
 function Billboard(props) {
 	return (
@@ -315,11 +377,11 @@ function PlayerOrder (props) {
 function PlayerName(props){
 
 	return (
-		<form>
-			<label htmlFor='playername'>Your name</label>
-			<input type='text' id='playername' name='playername'/>
+		<div className='nameInp'>
+			<label htmlFor='playername'>Your name: </label>
+			<input type='text' id='playername' name='playername' placeholder='Or Change Your Name'/>
 			<button type='button' onClick={props.setName}>Submit</button>
-		</form>
+		</div>
 		)
 	
 }
