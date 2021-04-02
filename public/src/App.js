@@ -9,7 +9,6 @@ const App = () => {
 			<Router>
 				<Landing path='/' />
 				<Scoreboard path='room/:roomId' />
-				<Scoreboard path='test2' />
 			</Router>
 		)
 }
@@ -19,8 +18,8 @@ ReactDOM.render(<App/>,
   document.getElementById('scoreBoard')
 );
 
-if (module.hot) {
-   module.hot.accept('./ScoreBoard.js', function() {
-     console.log('Accepting the updated printMe module!');
-   })
- }
+// if (module.hot) {
+//    module.hot.accept('./ScoreBoard.js', function() {
+//      console.log('Accepting the updated printMe module!');
+//    })
+//  }

@@ -6,25 +6,32 @@ function Landing() {
 	const [name, setName] = useState('')
 	
 	const handleSubmit = (e) => {
-		console.log(e)
+		// console.log(e)
 		e.preventDefault()
-		socket.emit('set name', {name: name, id: playerid })
+		if (name !=''){
+			
+			console.log(name)
+			socket.emit('set name', {name: name, id: playerid })
+			var roomName = randomWords({exactly: 3, join:'-'})
+			socket.emit('new room', {room: roomName })
+			navigate(`/room/${roomName}`)	
+
+		} else {
+			// dont let them proceed w/o a name
+			
+		}
 		
 	}
 
-	const createRoom = () => {
-		var roomName = randomWords({ exactly: 3, join:'-'})
-		socket.emit('new room', {room: roomName })
-		navigate(`/room/${roomName}`)
-	}
-
 	return (
-		<div>
+		<div className='landing'>
+			<h1> ZhaoPengYou </h1>
 			<form>
-				<label htmlFor='playername'>Your name</label>
-				<input type='text' id='playername' name='playername' onChange={e => setName(e.target.value)} value={name}/>
-				<button type='button' onClick={handleSubmit}>Submit</button>
-				<button type='button' onClick={createRoom}>Create Room</button>
+				<div className='nameInp'>
+					<label htmlFor='playername'>Your name: </label>
+					<input type='text' id='playername' placeholder='Or Change Your Name' name='playername' onChange={e => setName(e.target.value)} value={name}/>				
+				</div>
+				<button className='landingbtn' type='button' onClick={handleSubmit}>Create Room</button>
 			</form>
 		</div>
 	)

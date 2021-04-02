@@ -9,3 +9,44 @@ select {
 .callFriends {
 	margin: 10px;
 }
+
+.landing{
+	margin-top: 15%;
+	height: 100%;
+	text-align: center;
+}
+
+.landingbtn{
+	display: block;
+	
+	/*height: 40px;*/
+	padding: 10px;
+	font-size: 1.5em;
+	border-radius: 10px;
+	margin: auto;
+	background: green;
+
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	box-shadow: 0 6px black;
+}
+
+.landingbtn:hover{
+	box-shadow: 0 4px black;
+	top: 2px;
+}
+
+.landingbtn:active{
+	border-radius: 10px;
+	box-shadow: none;
+	top: 6px;
+}
+
+.nameInp{
+	font-size: 1.3em;
+	margin-bottom: 20px;
+}
+
+input{
+	height: 20px;
+}
