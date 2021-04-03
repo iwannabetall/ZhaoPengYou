@@ -501,7 +501,7 @@ io.on('connection', function (socket){
 		scoreBoardData.highestHand = {}
 		scoreBoardData.highestHand.cards = []
 
-		console.log('reset scoreBoardData', scoreBoardData)
+		// console.log('reset scoreBoardData', scoreBoardData)
 		
 		liangData = {}
 		liangData.numberFlipped = 0
@@ -530,9 +530,10 @@ io.on('connection', function (socket){
 		var kouDi = 8  // number of cards at bottom 
 		var cardCount = 0
 		console.log('shuffledCards', shuffledCards.length)
+		console.log(shuffledCards)
 		bottom8Cards = shuffledCards.splice(shuffledCards.length - 8)
 		console.log('bottom8Cards', bottom8Cards)
-		console.log('shuffledCards', shuffledCards.length)
+		// console.log('shuffledCards', shuffledCards.length)
 		while (cardInd < shuffledCards.length - kouDi) {
 		// while (cardInd < 15){
 			if (cardInd % players.length == 0) {
@@ -626,6 +627,7 @@ io.on('connection', function (socket){
 
 	socket.on('can I go', function (cardHand) {
 		console.log('can i go', cardHand)
+		console.log('scoreBoardData.players', scoreBoardData.players)
 		var playedCards = cardHand.cards.map(x=>x.card)
 
 		if (cardHand.cards.length > 0) {
@@ -648,6 +650,7 @@ io.on('connection', function (socket){
 					scoreBoardData.firstSuit = firstSuit
 
 					followedSuit = true
+					console.log('followed suit')
 				} else {
 					// for all hands played after the first person
 					// need to make sure that they play either correct suit or zhu pai or are out of suit if they play zhu pai 
@@ -683,7 +686,7 @@ io.on('connection', function (socket){
 				}
 							
 				if (followedSuit){
-					socket.to(roomId).emit('play your cards')		
+					socket.emit('play your cards')		
 				} else {
 					io.to(cardHand.player).emit('error', errMsg)
 					console.log('follow suit')
@@ -762,6 +765,7 @@ io.on('connection', function (socket){
 
 	socket.on('playHand', function (cardHand) {
 
+		console.log('playHand', cardHand)
 		var playedCards = cardHand.cards.map(x=>x.card)
 
 		// need to determine 3 main things - whose turn it is, are they joining a team, is it the end of the game

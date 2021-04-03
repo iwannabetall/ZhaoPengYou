@@ -441,7 +441,7 @@ function create ()
 	})
 
 	socket.on("return cards", (data) => {
-		console.log(data)
+		// console.log(data)
 		// console.log(yourHandList)
 		// return cards to peoples hands and sort their cards
 		yourHandList = yourHandList.concat(data.cards)
@@ -464,13 +464,14 @@ function create ()
 	})
 
 	socket.on('cardPlayed', (handPlayed)=> {
+		// console.log(handPlayed)
 		var detailedHand = handPlayed.detailed  
 		var hand = handPlayed.cards
 		var playerId = handPlayed.player
 		
 		showPlayedCards(detailedHand, playerId)
 
-		console.log(cardsPlayed)
+		// console.log(cardsPlayed)
 	})
 
 	socket.on('clearTable', ()=>{
@@ -531,10 +532,10 @@ function create ()
 		}
 
 		maxScroll = (yourHandList.length * 30)/5
-		console.log(maxScroll)
 
 		dropZoneCardsSprites.forEach((card)=> card.destroy())
-		console.log(dropZoneCardsSprites)
+		console.log('play your cards', dropZoneCardsSprites)
+		console.log(dropZoneCards)
 
 		socket.emit("playHand", {cards: dropZoneCards, player: playerid, lastRound: lastRound, remainingCards: yourHandList});
 	
@@ -582,7 +583,7 @@ function showPlayedCards(detailedHand, playerId) {
 		.setName(`${detailedHand[i].card}${detailedHand[i].deck}`).setData('card', 'oppHand').setInteractive()
 		card.setData('deck', detailedHand[i].deck)
 		cardsPlayed.push(card)
-		// console.log(card)
+		console.log(card)
 	}
 
 }
@@ -608,8 +609,8 @@ function clearRound(){
 function sortHand() {
 
 	// pass zhu in as parameter 
-	// console.log(yourHand)
-	// console.log(yourHandList)
+	console.log(yourHand)
+	console.log(yourHandList)
 
 	yourHand.forEach((card)=> card.destroy())
 
@@ -683,6 +684,7 @@ function getPlayerById(){
 }
 
 function liang() {
+	console.log(last2ClickedCards)
 	var clicker = getPlayerById()
 	socket.emit('liang', {'card': last2ClickedCards, id: playerid, name: clicker})
 }
