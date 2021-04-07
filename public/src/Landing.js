@@ -5,11 +5,13 @@ import randomWords from 'random-words'
 function Landing() {
 	
 	const handleSubmit = () => {	
-		var roomName = randomWords({exactly: 3, join:'-'})
-		socket.emit('new room', {room: roomName })
-		navigate(`/room/${roomName}`)	
-		
+		socket.emit('new room')		
 	}
+
+	socket.on('go to room', function(room) {
+		console.log(room)
+		navigate(`/room/${room.roomId}`)	
+	})
 
 	return (
 		<div className='landing'>

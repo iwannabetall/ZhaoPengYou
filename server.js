@@ -1,6 +1,7 @@
 const socketIo = require("socket.io")
 const express = require('express');
 const http = require('http')
+const randomWords = require('random-words')
 
 var app = express();
 
@@ -14,6 +15,9 @@ const io = socketIo(server, {
 	pingTimeout: 60000
 });  // set io to a socket w/the instance of our server
 
+const gamedata = require('./controllers/gamedata.js')(io)
+const axios = require('axios')
+
 // app.use(express.logger());
 app.set("view options", {layout: false});
 app.use(express.static(__dirname + '/public'));
@@ -26,6 +30,40 @@ app.get('*', function(req,res) {
   res.sendFile(__dirname + '/public/index.html');
 });
 
+app.post('/savegamedata', gamedata.saveGameData)
+app.post('/resavedata', gamedata.resaveData)
+
+function createGameData(roomId){
+	allGameData[roomId] = {}
+	allGameData[roomId].players = []
+	allGameData[roomId].playerInfo = [];
+	allGameData[roomId].gameHistory = []
+	allGameData[roomId].roundHistory = {}
+	allGameData[roomId].cardHistory = []
+	allGameData[roomId].pointsInRound
+	allGameData[roomId].roundWinner
+	allGameData[roomId].scoreBoardData = {}
+	allGameData[roomId].confirmZhuang = []
+	allGameData[roomId].liangData
+	allGameData[roomId].firstLiang = {}
+	allGameData[roomId].firstLiang.name = null
+	allGameData[roomId].startingLevel
+	allGameData[roomId].gameStarted = false
+	allGameData[roomId].kouDiCards
+	allGameData[roomId].bottom8Cards
+	allGameData[roomId].askedFriend1 //= 'sace_of_diamonds'
+	allGameData[roomId].askedFriend2 // = 'sace_of_spades'
+	allGameData[roomId].askedFriend1Condition //= 'First'
+	allGameData[roomId].askedFriend2Condition // = 'First'
+	allGameData[roomId].cardsBefore1 //= 0 // need to track how many of the cards ie Ace of spades have been played to konw if they're on a team -- how many cards of the called card need to be played before theyre on a team -- when it's zero on a played card, theyre on the team 
+	allGameData[roomId].cardsBefore2 //= 0
+	allGameData[roomId].outsideCondition1  // need to track if the zhuang called for outside first, if they played their ace??  ehh dont think so 
+	allGameData[roomId].outsideCondition2
+
+}
+
+
+var allGameData = {}  // keyed by room id 
 
 let players = [];  // player ids 
 var playerInfo = [];
@@ -34,7 +72,7 @@ var gameHistory = [] // array of round History
 var roundHistory = {} // contains cardHisotry, points scored and by whom 
 var cardHistory = [] // cards played in a round by each player, embedded in roundHistory
 var pointsInRound = 0 // points played in a ro`und 
-var votes = 0 
+// var votes = 0 
 var roundWinner // who won the round, either points or team
 var scoreBoardData = {} // what points and levels each player has.  should track who was zhuang in each game and what the teams were 
 var confirmZhuang = [] // track who has confirmed zhuangjia -- needs to match all players??? whati f there's an issue with the server tracking who's connected? or should i just do all player names? what if there's duplicate names? 
@@ -147,7 +185,6 @@ function countPoints(card) {
 
 function getPatternFreq(playedStats, trumpCard) {	
 
-	
 	if (playedStats.allSameSuit) {
 		// if theyre all the same suit, check to see if it's a tuolaji ie they played more than one pair 
 		var cards = Object.keys(playedStats.cards).sort()
@@ -460,10 +497,11 @@ io.on('connection', function (socket){
 
 	var url = socket.request.headers.referer 
 	
+	// joining room via url, ie not creating new room 
 	url = url.split('/room/')
 	if (url.length > 1) {
 		roomId = url[1]
-		socket.join(roomId)
+		socket.join(roomId)	
 		// io.to(socket.id).emit('loadGame')
 	}
 	console.log('A user connected: ' + socket.id);
@@ -472,11 +510,42 @@ io.on('connection', function (socket){
 	io.to(socket.id).emit('playerid', socket.id)
 
 	socket.on('new room', function(room) {
-		console.log('room', room)
-		roomId = room
-		socket.join(room)
-		// io.to(socket.id).emit('loadGame')
-		console.log(socket.room)
+		// creating new room 
+		var roomId = randomWords({exactly: 3, join:'-'})
+		var tries = 0
+
+		// make sure the room id is unique
+		while (allGameData[roomId] && tries < 10){
+			tries ++
+			roomId = randomWords({exactly: 3, join:'-'})			
+			console.log(tries, roomId)
+		}
+
+		if (!allGameData[roomId]) {
+			createGameData(roomId)	
+			// create new data obj 
+			socket.emit('go to room', {roomId: roomId, data: allGameData})
+			socket.join(roomId)	
+		} else {
+			console.log('NEED TO HANDLE NO RANDOM WORDS AVAIL')
+
+		}
+		// save game data 
+		axios({
+				method: "POST",
+				url: "http://localhost:3000/savegamedata",
+				headers: {
+				"Content-Type": "application/json"
+				},          
+				params: {data: allGameData, gameid: roomId},           
+			})
+			.then(res => {
+				// game data saved 
+			})
+			.catch(e => {
+				console.error(e)
+			})
+				
 	})
 
 	var randomNames = ['squirtle', 'pikachu', 'snorlax']
