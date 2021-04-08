@@ -2,6 +2,7 @@ const socketIo = require("socket.io")
 const express = require('express');
 const http = require('http')
 const randomWords = require('random-words')
+const { v4: uuidv4 } = require('uuid');
 
 var app = express();
 
@@ -62,6 +63,7 @@ function createGameData(roomId){
 
 }
 
+var globalPlayers = {}
 
 var allGameData = {}  // keyed by room id 
 
@@ -490,11 +492,28 @@ function updateWhoseTurn(gameData, playerid) {
 	return gameData
 }
 
+
 io.on('connection', function (socket){
 
+	// set playerid/cookie/see if they already have one 
+	var playeruuid = uuidv4()
+	// tell player their socket id when they connect 
+	io.to(socket.id).emit('playerid', playeruuid)
+
+	socket.on('create uuid', function() {
+		// create reference between socket and player
+		globalPlayers[playeruuid] = socket.id
+		console.log('create id')
+	})
+
+	socket.on('has uuid', function(id){
+		// if has id, change the socket that's associated with it 
+		globalPlayers[id] = socket.id
+	})
 	// console.log(socket.request.headers.referer)
 	// console.log(socket.request.url)
-
+	
+	console.log('id', playeruuid)
 	var url = socket.request.headers.referer 
 	
 	// joining room via url, ie not creating new room 
@@ -506,10 +525,8 @@ io.on('connection', function (socket){
 	}
 	console.log('A user connected: ' + socket.id);
 	
-	// tell player their socket id when they connect 
-	io.to(socket.id).emit('playerid', socket.id)
-
-	socket.on('new room', function(room) {
+	
+	socket.on('new room', function() {
 		// creating new room 
 		var roomId = randomWords({exactly: 3, join:'-'})
 		var tries = 0
@@ -537,7 +554,7 @@ io.on('connection', function (socket){
 				headers: {
 				"Content-Type": "application/json"
 				},          
-				params: {data: allGameData, gameid: roomId},           
+				params: {data: allGameData[roomId], gameid: roomId},           
 			})
 			.then(res => {
 				// game data saved 
@@ -545,7 +562,7 @@ io.on('connection', function (socket){
 			.catch(e => {
 				console.error(e)
 			})
-				
+
 	})
 
 	var randomNames = ['squirtle', 'pikachu', 'snorlax']

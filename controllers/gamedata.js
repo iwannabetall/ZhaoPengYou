@@ -23,9 +23,10 @@ module.exports = function(io) {
 	
 	databaseProcesses.saveGameData = async (req, res, next) => {
 
+		console.log(req.query.data)
 		const client = await pool.connect()
 		var gameid = req.query.gameid
-		var gamedata = JSON.parse(req.query.data)[gameid]
+		var gamedata = req.query.data
 		
 		// const result = await client.query('SELECT max(restaurant_id) from restaurantinfo;');
 		var text = 'insert into gamedata (gameid, gamedata) VALUES ($1, $2) returning *';
