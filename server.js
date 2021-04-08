@@ -520,6 +520,7 @@ io.on('connection', function (socket){
 	url = url.split('/room/')
 	if (url.length > 1) {
 		roomId = url[1]
+
 		socket.join(roomId)	
 		// io.to(socket.id).emit('loadGame')
 	}
@@ -578,6 +579,7 @@ io.on('connection', function (socket){
 	// set scoreboard levels 
 
 	socket.on('draw cards', function () {
+		// def need the room info 
 		// reset in game data 
 		scoreBoardData.players = []
 		scoreBoardData.players = playerInfo
@@ -586,7 +588,6 @@ io.on('connection', function (socket){
 		scoreBoardData.firstSuit = null // what was the suit of the first played hand 
 		scoreBoardData.highestHand = {}
 		scoreBoardData.highestHand.cards = []
-
 		// console.log('reset scoreBoardData', scoreBoardData)
 		
 		liangData = {}

@@ -1,4 +1,5 @@
 import React from 'react'
+import { Location } from "@reach/router"
 
 var suits = ['diamonds', 'spades', 'clubs', 'hearts'];
 
@@ -47,6 +48,7 @@ class Scoreboard extends React.Component {
 			findFriend2: null
 		}
 	}
+
 
 	submitFriends () {	
 		console.log(this.state.suit1Ask, this.state.val1Ask, this.state.friendCondition1, this.state.suit2Ask, this.state.val2Ask, this.state.friendCondition2)
@@ -279,7 +281,7 @@ class Scoreboard extends React.Component {
 	// {this.state.playerInfo && <PlayerOrder players={this.state.playerInfo}/>}
 	
 	render() {
-		return (			
+		return (
 			<div>
 				{this.state.name == '' && <PlayerName setName={(e) => this.setName(e)} name={this.state.name}/>}
 
