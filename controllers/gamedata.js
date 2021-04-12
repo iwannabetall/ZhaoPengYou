@@ -4,8 +4,8 @@ const { Pool } = require('pg');
 var moment = require('moment')
 const path = require('path')
 
-// require('dotenv').config({path: path.resolve(__dirname, '../.env')})
-require('dotenv')
+require('dotenv').config({path: path.resolve(__dirname, '../.env')})
+// require('dotenv')
 const pool = new Pool({	
   connectionString: process.env.URI,
   user: process.env.USERNAME,
@@ -23,7 +23,7 @@ module.exports = function(io) {
 	
 	databaseProcesses.saveGameData = async (req, res, next) => {
 
-		console.log(req.query.data)
+		// console.log(req.query.data)
 		const client = await pool.connect()
 		var gameid = req.query.gameid
 		var gamedata = req.query.data

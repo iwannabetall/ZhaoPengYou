@@ -59,7 +59,7 @@ class Scoreboard extends React.Component {
 	    // don't let people call zhu suit 
 	    if (this.state.suit1Ask != this.state.zhuSuit && this.state.suit2Ask != this.state.zhuSuit) {
 
-	    	socket.emit('call friends', {firstAskVal: this.state.val1Ask, firstAskSuit: this.state.suit1Ask, condition1: this.state.friendCondition1, secondAskVal: this.state.val2Ask, secondAskSuit: this.state.suit2Ask, condition2: this.state.friendCondition2})	
+	    	socket.emit('call friends', {firstAskVal: this.state.val1Ask, firstAskSuit: this.state.suit1Ask, condition1: this.state.friendCondition1, secondAskVal: this.state.val2Ask, secondAskSuit: this.state.suit2Ask, condition2: this.state.friendCondition2, roomId: window.roomId})	
 
 	    }
 		
@@ -104,17 +104,17 @@ class Scoreboard extends React.Component {
 	setName(e) {
 		e.preventDefault()
 		var name = document.getElementById('playername').value
-		console.log(name, playerid)
+		// console.log(name, playerid)
 		this.setState({
 			name: name,
 			// playerid: playerid
 		})
 		new Phaser.Game(config);
-		socket.emit('set name', {name: name, id: playerid })
+		socket.emit('set name', {name: name, id: playerid, roomId: window.roomId})
 	}
 
 	rejectZhuang() {
-		socket.emit('confirm zhuang', {response: false, zhuang: this.state.zhuangJiaInfo, responseById: playerid, responseByPlayer: this.state.name})
+		socket.emit('confirm zhuang', {response: false, zhuang: this.state.zhuangJiaInfo, responseById: playerid, responseByPlayer: this.state.name, roomId: window.roomId})
 		// responded to confirm zhuang jia 
 		this.setState({
 			confirmZhuangJia: false
@@ -122,7 +122,7 @@ class Scoreboard extends React.Component {
 	}
 
 	acceptZhuang() {
-		socket.emit('confirm zhuang', {response: true, zhuang: this.state.zhuangJiaInfo, responseById: playerid, responseByPlayer: this.state.name})
+		socket.emit('confirm zhuang', {response: true, zhuang: this.state.zhuangJiaInfo, responseById: playerid, responseByPlayer: this.state.name, roomId: window.roomId})
 		this.setState({
 			confirmZhuangJia: false, 
 
@@ -131,7 +131,7 @@ class Scoreboard extends React.Component {
 
 	playTheSmaller() {
 		console.log(cardSmaller, dropZoneCards)
-		socket.emit('take back hand', {higherHand: dropZoneCards, lowerHand: cardSmaller})
+		socket.emit('take back hand', {higherHand: dropZoneCards, lowerHand: cardSmaller, roomId: window.roomId})
 
 	}
 
@@ -159,13 +159,13 @@ class Scoreboard extends React.Component {
 		dropZoneCards = []
 		// console.log(dropZoneCardsSprites)
 		dropZoneCardsSprites = []
-		socket.emit('kouDi', {kouDiCards})
+		socket.emit('kouDi', {kouDiCards, roomId: window.roomId})
 		console.log('kouDi', yourHandList, kouDiCards)
 	}
 
 	startCardDraw() {
 		setTimeout(function() {
-			socket.emit('draw cards')	
+			socket.emit('draw cards', window.roomId)	
 		}, 1000)
 		console.log('it works')
 	}
@@ -173,18 +173,19 @@ class Scoreboard extends React.Component {
 	liang(){
 		var clicker = getPlayerById()
 		console.log(last2ClickedCards)
-		socket.emit('liang', {'card': last2ClickedCards, id: playerid, name: clicker})		
+		socket.emit('liang', {'card': last2ClickedCards, id: playerid, name: clicker, roomId: window.roomId})		
 	}
 
 	setZhuang() {
 		// allows zhuang to kou di 
-		socket.emit('set zhuang', {id: currentZhuangId, name: currentZhuang})
+		socket.emit('set zhuang', {id: currentZhuangId, name: currentZhuang, roomId: window.roomId})
 	}
 
 	componentDidMount() {
 		// endpoint = this.state.endpoint;  
     	// socket = socketIOClient(endpoint, {transports: ['websocket'], upgrade: false}); 
     	socket.on('playing order', (data) => {
+    		console.log(data)
     		this.setState({
 				playerInfo: data
     		})
@@ -265,9 +266,9 @@ class Scoreboard extends React.Component {
 				yourHandList = yourHandList.filter(x=>x.card != data.lowerHand[i].card)
 			}
 
-			dropZoneCards = data.lowerHand
+			dropZoneCards = data.lowerHand 
 
-			socket.emit('can I go', {player: data.lowerHandId, cards: data.lowerHand, remainingCards: remaining})
+			socket.emit('can I go', {player: data.lowerHandId, cards: data.lowerHand, remainingCards: remaining, roomId: window.roomId})
 
 			// console.log(yourHandList)
 			// console.log(data)

@@ -9,8 +9,12 @@ function Landing() {
 	}
 
 	socket.on('go to room', function(room) {
-		console.log(room)
+		window.roomId = room.roomId
 		navigate(`/room/${room.roomId}`)	
+	})
+
+	socket.on('room dne', function(){
+		navigate('/')
 	})
 
 	return (

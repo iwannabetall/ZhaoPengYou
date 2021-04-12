@@ -98,7 +98,7 @@ var currentZhuangId
 var zhuCard //set zhu suit
 var cursors
 var cardHandContainer
-
+var roomId
 var maxScroll = 500
 
 socket.on('playerid', function(id){	
@@ -107,9 +107,9 @@ socket.on('playerid', function(id){
 	var hasID = getCookie('zpyId') != ''  // true if already has playerid 
 	
 	if (hasID){
-		var id = getCookie('zpyId')
-		playerid = id
-		socket.emit('has uuid', id)
+		var origid = getCookie('zpyId')
+		playerid = origid
+		socket.emit('has uuid', {origid: origid, unusedId: id, roomId: roomId})
 	} else {
 		// if no cookie yet, create one 
 		setCookie('zpyId', id, 30)
@@ -123,6 +123,10 @@ socket.on('loadGame', () => {
 	new Phaser.Game(config);
 })
 
+socket.on('assign room', function(room) {
+	console.log(room)
+	roomId = room.roomId
+})
 
 function getCookie(cname) {
   var name = cname + "=";
@@ -194,7 +198,7 @@ function create ()
     // var centerX = this.cameras.main.centerX 
     // var centerY = this.cameras.main.centerY 
     self = this
-    console.log(self, this)
+    // console.log(self, this)
 
     // make sure to use arrow function for call back or "this" gets wrong reference 
 	socket.on('startGame', (data) => {
@@ -313,8 +317,8 @@ function create ()
 		// when picking avatars at the beg
 		if (gameObject.getData('group') == 'avatar') {
 			// tell server which avatar you picked and remove 
-			avatarGroup.clear(true, true)			
-			socket.emit('avatar', {avatar: gameObject.texture.key, id: playerid})
+			avatarGroup.clear(true, true)		
+			socket.emit('avatar', { avatar: gameObject.texture.key, id: playerid, roomId: roomId })
 		}
 
 		// // when clicking avatars to select who won 
@@ -506,7 +510,7 @@ function create ()
 
 		dropZoneCards = data.lowerHand
 
-		socket.emit('can I go', {player: data.lowerHandId, cards: data.lowerHand, remainingCards: remaining})
+		socket.emit('can I go', {player: data.lowerHandId, cards: data.lowerHand, remainingCards: remaining, roomId: roomId})
 
 		// console.log(yourHandList)
 		// console.log(data)
