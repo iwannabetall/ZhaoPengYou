@@ -381,9 +381,8 @@ function PlayerName(props){
 
 	return (
 		<div className='nameInp'>
-			<label htmlFor='playername'>Your name: </label>
-			<input type='text' id='playername' name='playername' placeholder='Or Change Your Name'/>
-			<button type='button' onClick={props.setName}>Submit</button>
+			<input type='text' id='playername' name='playername' placeholder='Your Name'/>
+				<button type='button' id='nameBtn' onClick={props.setName}>Submit</button>
 		</div>
 		)
 	
