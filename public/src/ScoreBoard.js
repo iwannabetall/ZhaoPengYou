@@ -306,9 +306,9 @@ class Scoreboard extends React.Component {
 // 
 function CardMoves(props){
 	return (<div>
-			<button onClick={props.startCardDraw}> Draw Cards </button>
-			<button onClick={props.playHand}> Play Hand </button>
-			<button onClick={props.sortHand}> Sort Hand </button>
+			<button className='gameBtn' onClick={props.startCardDraw}> Draw Cards </button>
+			<button className='gameBtn' onClick={props.playHand}> Play Hand </button>
+			<button className='gameBtn' onClick={props.sortHand}> Sort Hand </button>
 		</div>
 		)
 }
@@ -325,7 +325,7 @@ function CallFriends (props) {
 
 	return (<div className = 'callFriends'>
 				<h2>Kou Di </h2>
-				<button onClick={props.kouDi}>Kou Di </button> 
+				<button className='gameBtn' onClick={props.kouDi}>Kou Di </button> 
 
 				<h2>Call Your Friends</h2>
 				<div>
@@ -365,8 +365,8 @@ function Modal (props) {
 
 	return (
 		<div> ZhuangJia is {props.zhuangJia}
-			<button onClick={props.reject}> No </button>
-			<button onClick={props.accept}>Confirm</button>
+			<button className='gameBtn' onClick={props.reject}> No </button>
+			<button className='gameBtn' onClick={props.accept}>Confirm</button>
 		</div>
 		)
 }
@@ -382,7 +382,7 @@ function PlayerName(props){
 	return (
 		<div className='nameInp'>
 			<input type='text' id='playername' name='playername' placeholder='Your Name'/>
-				<button type='button' id='nameBtn' onClick={props.setName}>Submit</button>
+				<button className='gameBtn' type='button' id='nameBtn' onClick={props.setName}>Submit</button>
 		</div>
 		)
 	
@@ -391,8 +391,8 @@ function PlayerName(props){
 function InGame(props){
 	return (
 		<div className='ingame'>
-			<button type='button' onClick={props.showHand}>Show/Hide Cards!!!!!</button>
-			<button type='button' onClick={props.playTheSmaller}>Force the smaller hand</button>
+			<button className='gameBtn' type='button' onClick={props.showHand}>Show/Hide Cards!!!!!</button>
+			<button className='gameBtn' type='button' onClick={props.playTheSmaller}>Force the smaller hand</button>
 		</div>
 		)
 }
@@ -413,8 +413,8 @@ function Rankings (props) {
 function ZhuangJia(props){
 	return (
 		<div>
-			<button onClick={props.liang}>Liang</button>
-			<button onClick={props.setZhuang}>Set ZhuangJia</button>
+			<button className='gameBtn' onClick={props.liang}>Liang</button>
+			<button className='gameBtn' onClick={props.setZhuang}>Set ZhuangJia</button>
 		</div>
 	)
 }

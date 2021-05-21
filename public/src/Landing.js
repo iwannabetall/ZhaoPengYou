@@ -19,7 +19,8 @@ function Landing() {
 
 	return (
 		<div className='landing'>
-			<h1> ZhaoPengYou </h1>			
+			<h1 className='chinese'> ZhaoPengYou </h1>
+			<h1 className='chinese'> 找朋友 </h1>
 				<button className='landingbtn' type='button' onClick={handleSubmit}>Create Room</button>			
 		</div>
 	)
