@@ -24,10 +24,12 @@ class Scoreboard extends React.Component {
 		this.setZhuang = this.setZhuang.bind(this)
 		this.playTheSmaller = this.playTheSmaller.bind(this)
 		this.startCardDraw = this.startCardDraw.bind(this)
+		this.setGameState = this.setGameState.bind(this)		
 		// this.playHand = this.playHand.bind(this)
 		// this.sortHand = this.sortHand.bind(this)
 
 		this.state = {
+			gameState: 'pregame', // start with pregame for before cards dealt 
 			playerInfo: null,
 			name: '',
 			// playerid: null,
@@ -49,6 +51,11 @@ class Scoreboard extends React.Component {
 		}
 	}
 
+	setGameState(newState) {
+		this.setState({
+			gameState: newState
+		})
+	}
 
 	submitFriends () {	
 		console.log(this.state.suit1Ask, this.state.val1Ask, this.state.friendCondition1, this.state.suit2Ask, this.state.val2Ask, this.state.friendCondition2)
@@ -105,12 +112,18 @@ class Scoreboard extends React.Component {
 		e.preventDefault()
 		var name = document.getElementById('playername').value
 		// console.log(name, playerid)
-		this.setState({
-			name: name,
-			// playerid: playerid
-		})
-		new Phaser.Game(config);
-		socket.emit('set name', {name: name, id: playerid, roomId: window.roomId})
+		if (name.trim().length > 0) {
+			this.setState({
+				name: name,
+				// playerid: playerid
+			})
+			new Phaser.Game(config);
+			socket.emit('set name', {name: name, id: playerid, roomId: window.roomId})	
+		} else {
+			// what should it do if there's no name?? 
+				
+		}
+		
 	}
 
 	rejectZhuang() {
@@ -172,13 +185,22 @@ class Scoreboard extends React.Component {
 
 	liang(){
 		var clicker = getPlayerById()
-		console.log(last2ClickedCards)
-		socket.emit('liang', {'card': last2ClickedCards, id: playerid, name: clicker, roomId: window.roomId})		
+		console.log('dropZoneCards', dropZoneCards)
+		if (dropZoneCards.length > 0) {
+			var cardsFlipped = dropZoneCards.map(x=>x.card)
+			socket.emit('liang', {'card': cardsFlipped, id: playerid, name: clicker, roomId: window.roomId})		
+		}
+			
 	}
 
 	setZhuang() {
 		// allows zhuang to kou di 
-		socket.emit('set zhuang', {id: currentZhuangId, name: currentZhuang, roomId: window.roomId})
+		if (currentZhuangId) {
+			socket.emit('set zhuang', {id: currentZhuangId, name: currentZhuang, roomId: window.roomId})	
+		} else {
+			console.log('nobody has flipped')
+		}
+		
 	}
 
 	componentDidMount() {
@@ -190,6 +212,12 @@ class Scoreboard extends React.Component {
 				playerInfo: data
     		})
     		
+    	})
+
+    	socket.on('gameStatus', (data) => {
+    		this.setState({
+    			gameState: data
+    		})
     	})
 
     	socket.on('cardPlayed', (data) => {
@@ -242,15 +270,16 @@ class Scoreboard extends React.Component {
     		})
     	})
 
-		socket.on('send bottom 8', (cards) => {
-			console.log(cards.bottom8Cards)
+    	// duplicate.  idiot lol
+		// socket.on('send bottom 8', (cards) => {
+		// 	console.log('bottom 8', cards.bottom8Cards)
 
-			yourHandList = yourHandList.concat(cards.bottom8Cards)
+		// 	yourHandList = yourHandList.concat(cards.bottom8Cards)
 
-			sortHand()
-			maxScroll = (yourHandList.length * 30)/5		
+		// 	sortHand()
+		// 	maxScroll = (yourHandList.length * 30)/5		
 			
-		})
+		// })
 
 		socket.on("return cards", (data) => {
 			console.log(data)
@@ -275,8 +304,6 @@ class Scoreboard extends React.Component {
 
 		})
 
-
-
 	}
 
 	// {this.state.playerInfo && <PlayerOrder players={this.state.playerInfo}/>}
@@ -293,9 +320,9 @@ class Scoreboard extends React.Component {
 				{this.state.amIZhuangJia && this.state.findFriend1 == null && <CallFriends selectVal1={(e) => this.selectVal1(e)} selectVal2={(e) => this.selectVal2(e)} selectSuit1={(e) => this.selectSuit1(e)} selectSuit2={(e) => this.selectSuit2(e)} selectFriendCondition1={(e) => this.selectFriendCondition1(e)} selectFriendCondition2={(e) => this.selectFriendCondition2(e)} suit1Ask={this.state.suit1Ask} suit2Ask={this.state.suit2Ask} val1Ask={this.state.val1Ask} val2Ask={this.state.val2Ask} friendCondition1={this.state.friendCondition1} friendCondition2={this.state.friendCondition2} submitFriends={() => this.submitFriends()} kouDi={()=>this.kouDi()} />}
 				{this.state.findFriend1 != null && <Billboard zhuangJia={this.state.zhuangJiaInfo.name} findFriend1={this.state.findFriend1} findFriend2={this.state.findFriend2} />}				
 				{this.state.scoreBoard && <Rankings score={this.state.scoreBoard} level={this.state.level}/>}
-				<ZhuangJia liang={()=> this.liang()} setZhuang={() => this.setZhuang()}/>
-				<InGame showHand={() => this.showHand()} playTheSmaller={()=>this.playTheSmaller()}/>
-				<CardMoves startCardDraw={() => this.startCardDraw()} playHand={()=> window.playHand()} sortHand={()=> window.sortHand()}/>
+				<ZhuangJia liang={()=> this.liang()} setZhuang={() => this.setZhuang()} gameState={this.state.gameState}/>
+				<InGame showHand={() => this.showHand()} playTheSmaller={()=>this.playTheSmaller()} gameState={this.state.gameState}/>
+				<CardMoves startCardDraw={() => this.startCardDraw()} playHand={()=> window.playHand()} sortHand={()=> window.sortHand()} gameState={this.state.gameState}/>
 				</div>}
 
 			</div>
@@ -306,13 +333,32 @@ class Scoreboard extends React.Component {
 // 
 function CardMoves(props){
 	return (<div>
-			<button className='gameBtn' onClick={props.startCardDraw}> Draw Cards </button>
-			<button className='gameBtn' onClick={props.playHand}> Play Hand </button>
-			<button className='gameBtn' onClick={props.sortHand}> Sort Hand </button>
+			{props.gameState == 'pregame' && <button className='gameBtn' onClick={props.startCardDraw}> Draw Cards </button>}
+			{props.gameState == 'playing' && <button className='gameBtn' onClick={props.playHand}> Play Hand </button>}				
+			{(props.gameState == 'dealing' || props.gameState == 'playing' || props.gameState == 'snack_time') && <button className='gameBtn' onClick={props.sortHand}> Sort Hand </button>}
 		</div>
 		)
 }
 
+
+function InGame(props){
+	return (
+		props.gameState != 'pregame' && <div className='ingame'>
+			<button className='gameBtn' type='button' onClick={props.showHand}>藏/看牌</button>
+			{props.gameState == 'playing' && <button className='gameBtn' type='button' onClick={props.playTheSmaller}>大小的</button>}
+		</div>
+		
+		)
+}
+
+function ZhuangJia(props){
+	return (
+		<div>
+			{(props.gameState == 'snack_time' || props.gameState == 'dealing') && <button className='gameBtn' onClick={props.liang}>Liang</button>}
+			{props.gameState == 'snack_time' && <button className='gameBtn' onClick={props.setZhuang}>定庄家</button>}
+		</div>
+	)
+}
 
 function Billboard(props) {
 	return (
@@ -388,14 +434,6 @@ function PlayerName(props){
 	
 }
 
-function InGame(props){
-	return (
-		<div className='ingame'>
-			<button className='gameBtn' type='button' onClick={props.showHand}>Show/Hide Cards!!!!!</button>
-			<button className='gameBtn' type='button' onClick={props.playTheSmaller}>Force the smaller hand</button>
-		</div>
-		)
-}
 
 
 function Rankings (props) {
@@ -410,14 +448,6 @@ function Rankings (props) {
 		)
 }
 
-function ZhuangJia(props){
-	return (
-		<div>
-			<button className='gameBtn' onClick={props.liang}>Liang</button>
-			<button className='gameBtn' onClick={props.setZhuang}>Set ZhuangJia</button>
-		</div>
-	)
-}
 
 export default Scoreboard
 // ReactDOM.render(

@@ -47,13 +47,13 @@ function createGameData(roomId){
 	allGameData[roomId].gamedata.pointsInRound = 0
 	allGameData[roomId].gamedata.roundWinner = null// who won the round, either points or team
 // var scoreBoardData = {} // what points and levels each player has.  should track who was zhuang in each game and what the teams were 
-	
+	allGameData[roomId].gamedata.gameNumber = 1 // track how many games they've played, if it's the first, need to fight for zhuang jia 
 	allGameData[roomId].gamedata.scoreBoardData = {} // what points and levels each player has.  should track who was zhuang in each game and what the teams were 	
 	allGameData[roomId].gamedata.scoreBoardData.players = []
 	// allGameData[roomId].gamedata.scoreBoardData.players = playerInfo
 	allGameData[roomId].gamedata.scoreBoardData.zhuangJia = {}
 	allGameData[roomId].gamedata.scoreBoardData.whoseTurn = null 
-	allGameData[roomId].gamedata.scoreBoardData.firstSuit = null // what was the suit of the first played hand 
+	allGameData[roomId].gamedata.scoreBoardData.firstSuit = null // what was the suit of the first played hand for that round 
 	allGameData[roomId].gamedata.scoreBoardData.highestHand = {}
 	allGameData[roomId].gamedata.scoreBoardData.highestHand.cards = []
 	// console.log('reset scoreBoardData', scoreBoardData)	
@@ -61,10 +61,11 @@ function createGameData(roomId){
 	allGameData[roomId].gamedata.confirmZhuang = [] // track who has confirmed zhuangjia -- needs to match all players??? whati f there's an issue with the server tracking who's connected? or should i just do all player names? what if there's duplicate names? 
 	allGameData[roomId].gamedata.liangData = {}
 	allGameData[roomId].gamedata.liangData.numberFlipped = 0
+	allGameData[roomId].gamedata.liangData.suitsFlipped = [] // make sure you dont flip one back 
 	allGameData[roomId].gamedata.liangData.flippedBy = null 
 	allGameData[roomId].gamedata.firstLiang = {}
 	allGameData[roomId].gamedata.firstLiang.name = null
-	allGameData[roomId].gamedata.startingLevel
+	allGameData[roomId].gamedata.gameLevel = 2 // what level are we playing 
 	allGameData[roomId].gamedata.gameStarted = false	
 	allGameData[roomId].gamedata.askedFriend1 //= 'sace_of_diamonds'
 	allGameData[roomId].gamedata.askedFriend2 // = 'sace_of_spades'
@@ -122,9 +123,9 @@ var teamSet = false
 
 var cardVals = ['2','3','4','5','6','7','8','90','910','jack','queen','rking', 'sace'];
 
-var cardDeck = ["sace_of_diamonds", "2_of_diamonds", "3_of_diamonds", "4_of_diamonds", "5_of_diamonds", "6_of_diamonds", "7_of_diamonds", "8_of_diamonds", "90_of_diamonds", "910_of_diamonds", "jack_of_diamonds", "queen_of_diamonds", "rking_of_diamonds", "sace_of_spades", "2_of_spades", "3_of_spades", "4_of_spades", "5_of_spades", "6_of_spades", "7_of_spades", "8_of_spades", "90_of_spades", "910_of_spades", "jack_of_spades", "queen_of_spades", "rking_of_spades", "sace_of_clubs", "2_of_clubs", "3_of_clubs", "4_of_clubs", "5_of_clubs", "6_of_clubs", "7_of_clubs", "8_of_clubs", "90_of_clubs", "910_of_clubs", "jack_of_clubs", "queen_of_clubs", "rking_of_clubs", "sace_of_hearts", "2_of_hearts", "3_of_hearts", "4_of_hearts", "5_of_hearts", "6_of_hearts", "7_of_hearts", "8_of_hearts", "90_of_hearts", "910_of_hearts", "jack_of_hearts", "queen_of_hearts", "rking_of_hearts", 'zbig_joker', 'vsmall_joker']
+// var cardDeck = ["sace_of_diamonds", "2_of_diamonds", "3_of_diamonds", "4_of_diamonds", "5_of_diamonds", "6_of_diamonds", "7_of_diamonds", "8_of_diamonds", "90_of_diamonds", "910_of_diamonds", "jack_of_diamonds", "queen_of_diamonds", "rking_of_diamonds", "sace_of_spades", "2_of_spades", "3_of_spades", "4_of_spades", "5_of_spades", "6_of_spades", "7_of_spades", "8_of_spades", "90_of_spades", "910_of_spades", "jack_of_spades", "queen_of_spades", "rking_of_spades", "sace_of_clubs", "2_of_clubs", "3_of_clubs", "4_of_clubs", "5_of_clubs", "6_of_clubs", "7_of_clubs", "8_of_clubs", "90_of_clubs", "910_of_clubs", "jack_of_clubs", "queen_of_clubs", "rking_of_clubs", "sace_of_hearts", "2_of_hearts", "3_of_hearts", "4_of_hearts", "5_of_hearts", "6_of_hearts", "7_of_hearts", "8_of_hearts", "90_of_hearts", "910_of_hearts", "jack_of_hearts", "queen_of_hearts", "rking_of_hearts", 'zbig_joker', 'vsmall_joker']
 
-// var cardDeck = ["sace_of_diamonds", "2_of_diamonds", "90_of_diamonds", "910_of_diamonds", "jack_of_diamonds", "queen_of_diamonds", "rking_of_diamonds", "sace_of_spades", "2_of_spades", "3_of_spades", "4_of_spades", "5_of_spades ","90_of_spades", "910_of_spades", "rking_of_spades", "sace_of_clubs", "2_of_clubs", "5_of_clubs","910_of_clubs", "jack_of_clubs", "queen_of_clubs", "rking_of_clubs", "sace_of_hearts", "90_of_hearts", "910_of_hearts", "jack_of_hearts", "queen_of_hearts", "rking_of_hearts"]
+var cardDeck = ["sace_of_diamonds", "2_of_diamonds", "90_of_diamonds", "910_of_diamonds", "jack_of_diamonds", "queen_of_diamonds", "rking_of_diamonds", "sace_of_spades", "2_of_spades", "3_of_spades", "4_of_spades", "5_of_spades ","90_of_spades", "queen_of_hearts", "rking_of_hearts"]
 
 function generateDecks(decksNeeded) {
 	var fullCardDeck = []	
@@ -500,6 +501,9 @@ function updateWhoseTurn(gameData, playerid) {
 	var turn = scoreBoardOrder.indexOf(playerid)
 	gameData.players[turn].playedHand = true
 
+	// turn = calcTurnCycle(turn, scoreBoardOrder.length)
+	gameData.whoseTurn = gameData.players[turn].id
+
 	if (turn + 1 > scoreBoardOrder.length - 1) {
 		// check if it's the last one in order 
 		turn = 0
@@ -511,6 +515,63 @@ function updateWhoseTurn(gameData, playerid) {
 	}	// 
 	return gameData
 }
+
+// function calcTurnCycle(ind, arrayLength) {
+// 	// minus 1 b/c 0 indexed
+// 	let ind = ind + 1 > arrayLength - 1 ? 0 : ind + 1
+// 	return ind
+// }
+
+function getNextZhuang(gameData, currentZhuang, zhuangJiaWon) {
+
+	if (zhuangJiaWon) {
+		var zhuangJiaTeam = gameData.scoreBoardData.players.filter(x=> x.joinedZhuang == true).map(x=>x.id)
+
+		var zhuangId = gameData.scoreBoardData.zhuangJia.id
+		var zhuangIndex = zhuangJiaTeam.indexOf(zhuangId)
+		zhuangIndex = zhuangIndex + 1 > zhuangJiaTeam.length - 1 ? 0 : zhuangIndex + 1
+		// zhuangIndex = calcTurnCycle(zhuangIndex, zhuangJiaTeam.length)
+		var nextZhuang = zhuangJiaTeam[zhuangIndex].id
+
+	} else { 
+		//for losing team -- have to find where zhuangjia was sitting 
+		var findZhuang = gameData.scoreBoardData.players.map(x=>x.id).indexOf(zhuangId)
+		while (gameData.scoreBoardData.players[findZhuang].joinedZhuang == true) {
+
+			if (findZhuang + 1 > gameData.scoreBoardData.players.length - 1) {
+				findZhuang = 0
+			} else {
+				findZhuang = findZhuang + 1	
+			}
+			console.log('findZhuang', findZhuang)
+		}
+		console.log(gameData.scoreBoardData.players)
+
+		console.log(gameData.scoreBoardData.players[findZhuang])
+		var nextZhuang = gameData.scoreBoardData.players[findZhuang].id
+	}	
+	
+	return nextZhuang
+
+	console.log('zhuangJiaTeam', zhuangJiaTeam)
+
+	console.log('notZhuangTeam', notZhuangTeam)
+	console.log('next zhuang if win', zhuangJiaTeam[zhuangIndex])
+
+}
+
+function setZhuangJiaInfo(roomId, pInd, zhuangId) {
+
+	allGameData[roomId].gamedata.scoreBoardData.players[pInd].zhuang = true 
+	allGameData[roomId].gamedata.scoreBoardData.players[pInd].joinedZhuang = true 
+	allGameData[roomId].gamedata.scoreBoardData.players[pInd].yourTurn = true
+	allGameData[roomId].gamedata.scoreBoardData.whoseTurn = zhuangId
+	allGameData[roomId].gamedata.scoreBoardData.zhuangJia = {name: allGameData[roomId].gamedata.scoreBoardData.players[pInd].name, id: zhuangId, teammates: []}
+	
+}
+
+
+
 
 function addPlayerToGame(roomId, playerid) {
 
@@ -526,6 +587,7 @@ function addPlayerToGame(roomId, playerid) {
 	allGameData[roomId].allPlayerCards[playerid] = []
 
 }
+
 
 function resetGameData(roomId) {
 	// var basicInfo = {name: randomNames[Math.round(Math.random()*2)], id: , joinedZhuang: false, lastRound: false, points: 0, level: null, playedHand: false, yourTurn: false}
@@ -697,13 +759,16 @@ io.on('connection', function (socket){
 		var cardInd = 0
 		var kouDi = 8  // number of cards at bottom 
 		var cardCount = 0
-		console.log('shuffledCards', shuffledCards.length)
-		console.log(shuffledCards)
+		// console.log('shuffledCards count', shuffledCards.length)
+		// console.log(shuffledCards)
 		bottom8Cards = shuffledCards.splice(shuffledCards.length - 8)
 		console.log('bottom8Cards', bottom8Cards)
-		// console.log('shuffledCards', shuffledCards.length)
-		while (cardInd < shuffledCards.length - kouDi) {
+
+		io.in(roomId).emit('gameStatus', 'dealing') 
+
+		while (cardInd < shuffledCards.length) {
 		// while (cardInd < 15){
+			// console.log(cardInd, shuffledCards[cardInd].card, shuffledCards[cardInd].deck)
 			if (cardInd % allGameData[roomId].gamedata.players.length == 0) {
 				cardCount = cardCount + 1
 			}
@@ -713,8 +778,15 @@ io.on('connection', function (socket){
 			allGameData[roomId].allPlayerCards[dealToPlayer].push(`${shuffledCards[cardInd].card}-${shuffledCards[cardInd].deck}`)
 			io.to(globalPlayers[dealToPlayer]).emit('deal', {card: shuffledCards[cardInd].card, deck: shuffledCards[cardInd].deck, count: cardCount});
 			cardInd = cardInd + 1
+
+			if (cardInd == shuffledCards.length - kouDi) {
+				console.log('done dealing')
+	   		  // after all cards dealt, emit status update that it's snack time
+   				io.in(roomId).emit('gameStatus', 'snack_time') 
+
+			}
 		}
-   	
+   	   		
    // 	  var dealer = setInterval(function() {
 			
    // 	  	console.log(cardInd, cardCount)
@@ -735,8 +807,10 @@ io.on('connection', function (socket){
    // 	  		clearInterval(dealer)
    // 	  	}
 			
-			// // console.log(`deal ${shuffledCards[cardInd]}`)
-   // 	  }, 1000)
+			// console.log(`deal ${shuffledCards[cardInd]}`)
+   	  // }, 1000)
+
+
    		
 	});
 
@@ -753,15 +827,17 @@ io.on('connection', function (socket){
 		} else {
 			allGameData[data.roomId].gamedata.confirmZhuang.push(data.responseByPlayer)
 			if (allGameData[data.roomId].gamedata.confirmZhuang.length == allGameData[data.roomId].gamedata.players.length){
-				allGameData[data.roomId].gamedata.scoreBoardData.players[order].zhuang = true 
-				allGameData[data.roomId].gamedata.scoreBoardData.players[order].joinedZhuang = true 
-				allGameData[data.roomId].gamedata.scoreBoardData.players[order].yourTurn = true
-				allGameData[data.roomId].gamedata.scoreBoardData.whoseTurn = data.zhuang.id
-				allGameData[data.roomId].gamedata.scoreBoardData.zhuangJia = {name: allGameData[data.roomId].gamedata.scoreBoardData.players[order].name, id: data.zhuang.id, teammates: []}
+
+				setZhuangJiaInfo(data.roomId, order, data.zhuang.id)
+				// allGameData[data.roomId].gamedata.scoreBoardData.players[order].zhuang = true 
+				// allGameData[data.roomId].gamedata.scoreBoardData.players[order].joinedZhuang = true 
+				// allGameData[data.roomId].gamedata.scoreBoardData.players[order].yourTurn = true
+				// allGameData[data.roomId].gamedata.scoreBoardData.whoseTurn = data.zhuang.id
+				// allGameData[data.roomId].gamedata.scoreBoardData.zhuangJia = {name: allGameData[data.roomId].gamedata.scoreBoardData.players[order].name, id: data.zhuang.id, teammates: []}
 				// remove zhuangjia from the players list, don't need to track for her ?? or just mark her as zhuangjia team and don't display?  prob the latter just in case we wan ot display it later? 	
 				var pts = tallyScoreByTeam(allGameData[data.roomId].gamedata.scoreBoardData.players)
 
-				console.log(pts)
+				console.log('zhuang confirmed ????')
 				io.in(data.roomId).emit('zhuang confirmed', {playerInfo: allGameData[data.roomId].gamedata.scoreBoardData.players, zhuang: data.zhuang})
 				io.to(globalPlayers[data.zhuang.id]).emit('send bottom 8', {bottom8Cards: bottom8Cards, numCardsInHand: numCardsInHand})
 				io.in(data.roomId).emit('updateScore', {scoreBoard: allGameData[data.roomId].gamedata.scoreBoardData})
@@ -1049,7 +1125,9 @@ io.on('connection', function (socket){
 
 			if (friend1.onTheTeam == true || friend2.onTheTeam == true) {
 				allGameData[data.roomId].gamedata.scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].joinedZhuang = true
-				allGameData[data.roomId].gamedata.scoreBoardData.zhuangJia.teammates.push(allGameData[data.roomId].gamedata.scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].name)
+
+				// wait do i actually need ids here?? or can i just down names 
+				allGameData[data.roomId].gamedata.scoreBoardData.zhuangJia.teammates.push({'name': allGameData[data.roomId].gamedata.scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].name, 'id': allGameData[data.roomId].gamedata.scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].id})
 			}
 			
 			console.log(friend1, friend2) 
@@ -1068,15 +1146,20 @@ io.on('connection', function (socket){
 				kouDiPoints = kouDiPoints + countPoints(allGameData[data.roomId].kouDiCards[i])
 			}
 			// NEED TO DEAL WITH WHO WON THE LAST HAND FOR KOUDI
-			// change levels and set zhuangjia 
+			// change levels and set zhuangjia 		
+
 			if (totalPoints == 0) {
-				// zhuangjia goes up 3 
+				// zhuangjia team goes up 3 
 				allGameData[data.roomId].gamedata.scoreBoardData.players.filter(x=> x.joinedZhuang == true).map(x => x.level = x.level + 3)
+				// change zhuangjia, change game level number 
+				var nextZhuang = getNextZhuang(gameData, currentZhuang, zhuangJiaWon) 
+				var newInd = allGameData[data.roomId].gamedata.players.indexOf(nextZhuang)
+				
+				setZhuangJiaInfo(data.roomId, newInd, nextZhuang)
 
 			} else if (totalPoints < 60) {
 				//zhuang jia team goes up 2 levels 
 				allGameData[data.roomId].gamedata.scoreBoardData.players.filter(x=> x.joinedZhuang == true).map(x => x.level = x.level + 2)
-
 
 			} else if (totalPoints < 110) {
 				//zhuang jia team goes up 1 level
@@ -1112,9 +1195,9 @@ io.on('connection', function (socket){
 		
 	});
 
-	socket.on('kouDi', function(discardedCards) {
-		console.log('koudi', discardedCards) 
-		allGameData[data.roomId].kouDiCards = discardedCards
+	socket.on('kouDi', function(data) {
+		console.log('koudi', data) 
+		allGameData[data.roomId].kouDiCards = data.kouDiCards
 		
 		// return how many points discarded?? 
 		io.in(roomId).emit('')
@@ -1200,80 +1283,50 @@ io.on('connection', function (socket){
 		// console.log('liang', data)
 		// console.log('liangData', liangData)
 		console.log('liang data', data)
-		console.log('roomid', roomId)
-		// var scoreBoardOrder = allGameData[data.roomId].gamedata.players
-		// update whose turn it is 
-		var p = allGameData[data.roomId].gamedata.players.indexOf(data.id)
-		console.log(p)
-		if (data.card.length > 0) {
-				// check if card already flipped 
+
+		//check to see if suit matches and if number flipped > previous number
+		// if number isnt enough, check to see if it's equal and has priority 
+		// make sure they flipped all matching cards 
+		// check that all cards match and flipped the right level 
+		var allMatch = true
+
+		for (var i = 0; i < data.card.length; i++) {
+
+			if (data.card[0] != data.card[i]) {
+				allMatch = false
+			}
+
+			// make sure the card they flipped was for the right level --THIS IS WRONG - NEED TO TRACK WHO IS ZHUANG JIA 
+			var p = allGameData[data.roomId].gamedata.players.indexOf(data.id)
+			console.log('level needed to flip', allGameData[data.roomId].gamedata.scoreBoardData.players[p].level)
+			if (!data.card[0].includes(allGameData[data.roomId].gamedata.gameLevel)){
+				allMatch = false
+			}
+
+		}
+
+		let zhuFlipped = false
+		// all cards match and are the right level
+		if (allMatch) {
+			var suit = allGameData[data.roomId].gamedata.liangData.suit = suit
+			// if nobody's flipped so far, set it as zhu 
 			if (allGameData[data.roomId].gamedata.liangData.flippedBy == null) {
-				// console.log('first zhu', scoreBoardData.players[p].level, data.card.includes(scoreBoardData.players[p].level), data.card[0])
-				// if nobody flipped yet, make sure they flipped right level
-				if (data.card[0].includes(allGameData[data.roomId].gamedata.scoreBoardData.players[p].level) && data.card.length == 1) {
-					//TODO need to make sure they haven't already flipped this one ie click same card twice 
-					
-					allGameData[data.roomId].gamedata.liangData.numberFlipped = 1
-					allGameData[data.roomId].gamedata.liangData.name = data.name
-					allGameData[data.roomId].gamedata.liangData.flippedBy = data.id  // need to announce who flipped it 
 
-					var suits = ['diamonds', 'spades', 'clubs', 'hearts'];
-					for (var i = 0; i < suits.length; i++) {
-						if (data.card.includes(suits[i])){
-							allGameData[data.roomId].gamedata.liangData.suit = suits[i]
-							allGameData[data.roomId].gamedata.scoreBoardData.trumpSuit = suits[i]
-						}
-					}
-					
-					allGameData[data.roomId].gamedata.firstLiang.card = data.card[0]
-					allGameData[data.roomId].gamedata.firstLiang.name = data.id
-				
-					allGameData[data.roomId].gamedata.scoreBoardData.zhuCard = data.card[0]
+				allGameData[data.roomId].gamedata.liangData.numberFlipped = 1
+				allGameData[data.roomId].gamedata.liangData.name = data.name
+				allGameData[data.roomId].gamedata.liangData.flippedBy = data.id  // need to announce who flipped it 
 
-					allGameData[data.roomId].gamedata.liangData.zhuCard = data.card[0]
-					// console.log('zhu flipped', liangData)
-					io.in(roomId).emit('zhuLiangLe', {liangData: allGameData[data.roomId].gamedata.liangData})
-				} else if (data.card.length > 1){
-					// check that all cards match 
-					var allMatch = true
-					for (var i = 0; i < data.card.length; i++) {
-						if (data.card[0] != data.card[i]) {
-							allMatch = false
-						}
-					}
+				allGameData[data.roomId].gamedata.firstLiang.card = data.card[0]
+				allGameData[data.roomId].gamedata.firstLiang.name = data.id
+			
+				allGameData[data.roomId].gamedata.scoreBoardData.zhuCard = data.card[0]
 
-					allGameData[data.roomId].gamedata.firstLiang.card = data.card[0]
-					allGameData[data.roomId].gamedata.firstLiang.name = data.id
+				allGameData[data.roomId].gamedata.liangData.zhuCard = data.card[0]
+				// console.log('zhu flipped', liangData)
+				zhuFlipped = true
 
-					allGameData[data.roomId].gamedata.liangData.numberFlipped = data.card.length
-					allGameData[data.roomId].gamedata.liangData.name = data.name
-					allGameData[data.roomId].gamedata.liangData.flippedBy = data.id  // need to announce who flipped it 
-					
-					allGameData[data.roomId].gamedata.liangData.suit = suit
-					allGameData[data.roomId].gamedata.scoreBoardData.trumpSuit = suit
-
-					allGameData[data.roomId].gamedata.scoreBoardData.zhuCard = data.card[0]
-					allGameData[data.roomId].gamedata.liangData.zhuCard = data.card[0]
-
-					io.in(roomId).emit('zhuLiangLe', {liangData: allGameData[data.roomId].gamedata.liangData})
-
-				}
-
-			} else if (data.card.length > 1) {
-				// if somebody already flipped, need more than 1 zhu 
-				// need to make sure can't change zhu 
-
-				// check that all cards match 
-				var allMatch = true
-				for (var i = 0; i < data.card.length; i++) {
-					if (data.card[0] != data.card[i]) {
-						allMatch = false
-					}
-				}
-				var suit = data.card[0].split('_')[2]
-
+			} else if (allGameData[data.roomId].gamedata.firstLiang.card == data.card[0] && allGameData[data.roomId].gamedata.firstLiang.name == data.id && (data.card.length >= allGameData[data.roomId].gamedata.liangData.numberFlipped)) {
 				// priority matching --must be same suit and have equal number or more 
-				if (allMatch && allGameData[data.roomId].gamedata.firstLiang.card == data.card[0] && allGameData[data.roomId].gamedata.firstLiang.name == data.id && (data.card.length >= allGameData[data.roomId].gamedata.liangData.numberFlipped)) {
 					// console.log('priority')
 					allGameData[data.roomId].gamedata.liangData.numberFlipped = data.card.length
 					allGameData[data.roomId].gamedata.liangData.name = data.name
@@ -1285,8 +1338,11 @@ io.on('connection', function (socket){
 					allGameData[data.roomId].gamedata.scoreBoardData.zhuCard = data.card[0]
 					allGameData[data.roomId].gamedata.liangData.zhuCard = data.card[0]
 
-				} else if (allMatch && allGameData[data.roomId].gamedata.firstLiang.card != data.card[0] && allGameData[data.roomId].gamedata.firstLiang.name != data.id && (data.card.length > allGameData[data.roomId].gamedata.liangData.numberFlipped)) {
-					
+					zhuFlipped = true
+
+				} else if (allGameData[data.roomId].gamedata.firstLiang.card != data.card[0] && allGameData[data.roomId].gamedata.firstLiang.name != data.id && (data.card.length > allGameData[data.roomId].gamedata.liangData.numberFlipped)) 
+				{
+					//not the first person to flip -> either have to flip more than prev flipped and a diff suit that before 
 					// console.log('beating zhu')
 					// flipping diff zhu 
 					allGameData[data.roomId].gamedata.liangData.numberFlipped = data.card.length
@@ -1299,19 +1355,120 @@ io.on('connection', function (socket){
 					allGameData[data.roomId].gamedata.scoreBoardData.zhuCard = data.card[0]
 					allGameData[data.roomId].gamedata.liangData.zhuCard = data.card[0]
 
-				} else {
-					io.in(roomId).emit('fail', {msg: 'have you already liang'})
-				}
-				io.in(roomId).emit('zhuLiangLe', {liangData: allGameData[data.roomId].gamedata.liangData})
+					zhuFlipped = true
 
+				}				
+				
+				// OR - you have priority and flipped first originally 
 			} else {
-			// reject message ie invalid card
+				// no match w/suit 
 				io.in(roomId).emit('fail', {msg: 'what are you doing??'})
 			}
-		}
+
+			if (zhuFlipped) {
+				io.in(roomId).emit('zhuLiangLe', {liangData: allGameData[data.roomId].gamedata.liangData})
+
+			}
+
+		})
+
+		// var scoreBoardOrder = allGameData[data.roomId].gamedata.players
+		// update whose turn it is 
+		// var p = allGameData[data.roomId].gamedata.players.indexOf(data.id)
+		// // if (data.card.length > 0) {
+		// // 		// check if card already flipped 
+		// 	if (allGameData[data.roomId].gamedata.liangData.flippedBy == null) {
+		// 		console.log('first zhu', scoreBoardData.players[p].level, data.card.includes(scoreBoardData.players[p].level), data.card[0])
+		// // 		// if nobody flipped yet, make sure they flipped right level
+		// 		if (data.card[0].includes(allGameData[data.roomId].gamedata.scoreBoardData.players[p].level) && data.card.length == 1) {
+		// // 			//TODO need to make sure they haven't already flipped this one ie click same card twice 
+		// 			var suits = ['diamonds', 'spades', 'clubs', 'hearts'];
+		// 			for (var i = 0; i < suits.length; i++) {
+		// 				if (data.card.includes(suits[i])){
+		// 					allGameData[data.roomId].gamedata.liangData.suit = suits[i]
+		// 					allGameData[data.roomId].gamedata.scoreBoardData.trumpSuit = suits[i]
+		// 				}
+		// 			}					
+
+		// 		} else if (data.card.length > 1){
+					// // check that all cards match 
+					// var allMatch = true
+					// for (var i = 0; i < data.card.length; i++) {
+					// 	if (data.card[0] != data.card[i]) {
+					// 		allMatch = false
+					// 	}
+					// }
+
+		// 			allGameData[data.roomId].gamedata.firstLiang.card = data.card[0]
+		// 			allGameData[data.roomId].gamedata.firstLiang.name = data.id
+
+		// 			allGameData[data.roomId].gamedata.liangData.numberFlipped = data.card.length
+		// 			allGameData[data.roomId].gamedata.liangData.name = data.name
+		// 			allGameData[data.roomId].gamedata.liangData.flippedBy = data.id  // need to announce who flipped it 
+					
+		// 			allGameData[data.roomId].gamedata.liangData.suit = suit
+		// 			allGameData[data.roomId].gamedata.scoreBoardData.trumpSuit = suit
+
+		// 			allGameData[data.roomId].gamedata.scoreBoardData.zhuCard = data.card[0]
+		// 			allGameData[data.roomId].gamedata.liangData.zhuCard = data.card[0]
+
+		// 			io.in(roomId).emit('zhuLiangLe', {liangData: allGameData[data.roomId].gamedata.liangData})
+
+		// 		}
+
+		// 	} else if (data.card.length > 1) {
+		// 		// if somebody already flipped, need more than 1 zhu 
+		// 		// need to make sure can't change zhu 
+
+		// 		// check that all cards match 
+		// 		var allMatch = true
+		// 		for (var i = 0; i < data.card.length; i++) {
+		// 			if (data.card[0] != data.card[i]) {
+		// 				allMatch = false
+		// 			}
+		// 		}
+		// 		var suit = data.card[0].split('_')[2]
+
+				// // priority matching --must be same suit and have equal number or more 
+				// if (allMatch && allGameData[data.roomId].gamedata.firstLiang.card == data.card[0] && allGameData[data.roomId].gamedata.firstLiang.name == data.id && (data.card.length >= allGameData[data.roomId].gamedata.liangData.numberFlipped)) {
+				// 	// console.log('priority')
+				// 	allGameData[data.roomId].gamedata.liangData.numberFlipped = data.card.length
+				// 	allGameData[data.roomId].gamedata.liangData.name = data.name
+				// 	allGameData[data.roomId].gamedata.liangData.flippedBy = data.id  // need to announce who flipped it 
+					
+				// 	allGameData[data.roomId].gamedata.liangData.suit = suit
+				// 	allGameData[data.roomId].gamedata.scoreBoardData.trumpSuit = suit
+
+				// 	allGameData[data.roomId].gamedata.scoreBoardData.zhuCard = data.card[0]
+				// 	allGameData[data.roomId].gamedata.liangData.zhuCard = data.card[0]
+
+				// } else if (allMatch && allGameData[data.roomId].gamedata.firstLiang.card != data.card[0] && allGameData[data.roomId].gamedata.firstLiang.name != data.id && (data.card.length > allGameData[data.roomId].gamedata.liangData.numberFlipped)) {
+					
+					// console.log('beating zhu')
+					// flipping diff zhu 
+					// allGameData[data.roomId].gamedata.liangData.numberFlipped = data.card.length
+					// allGameData[data.roomId].gamedata.liangData.name = data.name
+					// allGameData[data.roomId].gamedata.liangData.flippedBy = data.id  // need to announce who flipped it 
+					
+					// allGameData[data.roomId].gamedata.liangData.suit = suit
+					// allGameData[data.roomId].gamedata.scoreBoardData.trumpSuit = suit
+
+					// allGameData[data.roomId].gamedata.scoreBoardData.zhuCard = data.card[0]
+					// allGameData[data.roomId].gamedata.liangData.zhuCard = data.card[0]
+
+				// } else {
+				// 	io.in(roomId).emit('fail', {msg: 'have you already liang'})
+				// }
+				// io.in(roomId).emit('zhuLiangLe', {liangData: allGameData[data.roomId].gamedata.liangData})
+
+			// } else {
+			// reject message ie invalid card
+				// io.in(roomId).emit('fail', {msg: 'what are you doing??'})
+			// }
+		// }
 		
 		// console.log(liangData, firstLiang)		
-	})	
+	// })	
 		// need to check that nobody else has flipped and that it's the right level
 
 	// })

@@ -361,7 +361,7 @@ function create ()
 		    	}
 
 		    	last2ClickedCards.unshift(gameObject.texture.key)  // just need to know the card, not which deck 
-		    	// console.log(dropZoneCardsSprites)
+		    	console.log(dropZoneCardsSprites, dropZoneCards)
 		    } else {
 		    	// remove and move it back down 
 		    	gameObject.y = gameObject.y + 20
@@ -378,8 +378,8 @@ function create ()
 		    	kouDiSprites.splice(cardIndex, 1)  // remove gameobject from array
 
 		    	// console.log('remove', cardIndex, dropZoneCardsSprites.length)
-
-		    	// console.log(dropZoneCardsSprites)
+		    	console.log('dropZoneCards', dropZoneCards)
+		    	console.log(dropZoneCardsSprites)
 		    }	   
 		    
 	    }
@@ -475,7 +475,6 @@ function create ()
 	// })
 
 	socket.on('send bottom 8', (cards) => {
-		console.log(cards.bottom8Cards)
 
 		yourHandList = yourHandList.concat(cards.bottom8Cards)
 
@@ -663,7 +662,7 @@ function clearRound(){
 function sortHand() {
 
 	// pass zhu in as parameter 
-	console.log(yourHand)
+	// console.log(yourHand)
 	console.log(yourHandList)
 
 	yourHand.forEach((card)=> card.destroy())
@@ -737,11 +736,11 @@ function getPlayerById(){
 	return clicker
 }
 
-function liang() {
-	console.log(last2ClickedCards)
-	var clicker = getPlayerById()
-	socket.emit('liang', {'card': last2ClickedCards, id: playerid, name: clicker})
-}
+// function liang() {
+// 	console.log(last2ClickedCards)
+// 	var clicker = getPlayerById()
+// 	socket.emit('liang', {'card': last2ClickedCards, id: playerid, name: clicker})
+// }
 // function setName() {
 // 	var name = document.getElementById('name').value
 // 	socket.emit('set name', {name: name, id: playerid })
