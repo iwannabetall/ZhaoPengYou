@@ -344,6 +344,7 @@ function beatHand(originalHand, newHand, biAttempt, trumpCard) {
 
 function getCardStats(cards, trumpCard) {
 
+	console.log(cards, trumpCard)
 	var trumpSuit = trumpCard.split('_')[2]
 	var trumpCardNum = trumpCard.split('_')[0]
 
@@ -885,6 +886,7 @@ io.on('connection', function (socket){
 	socket.on('can I go', function (cardHand) {
 		console.log('can i go', cardHand)
 		console.log('scoreBoardData.players', allGameData[cardHand.roomId])
+		console.log('allGameData[cardHand.roomId].gamedata.scoreBoardData.zhuCard', allGameData[cardHand.roomId].gamedata.scoreBoardData.zhuCard)
 		var playedCards = cardHand.cards.map(x=>x.card)
 
 		if (cardHand.cards.length > 0) {
@@ -900,7 +902,7 @@ io.on('connection', function (socket){
 					// first play has to be all the same suit 
 					allGameData[cardHand.roomId].gamedata.scoreBoardData.highestHand.playedBy = cardHand.player
 					allGameData[cardHand.roomId].gamedata.scoreBoardData.highestHand.cards = playedCards.sort()
-					allGameData[cardHand.roomId].gamedata.scoreBoardData.highestHand.cardStats = getCardStats(playedCards, allGameData[cardHand.roomId].gamedata.scoreBoardData.zhuCard)
+					allGameData[cardHand.roomId].gamedata.scoreBoardData.highestHand.cardStats = getCardStats(playedCards, allGameData[cardHand.roomId].gamedata.scoreBoardData.zhuCard.card)
 						
 					// set what leading suit is to make sure ppl follow suit later
 					var firstSuit = allGameData[cardHand.roomId].gamedata.scoreBoardData.highestHand.cardStats.allZhu ? 'zhu' : Object.keys(allGameData[cardHand.roomId].gamedata.scoreBoardData.highestHand.cardStats.suits)[0]
@@ -912,8 +914,8 @@ io.on('connection', function (socket){
 					// for all hands played after the first person
 					// need to make sure that they play either correct suit or zhu pai or are out of suit if they play zhu pai 
 					// check that they followed suit or dont have that suit if theyre not going first 
-					var playedStats = getCardStats(playedCards, allGameData[cardHand.roomId].gamedata.scoreBoardData.zhuCard)
-					var remainingCardStats = getCardStats(cardHand.remainingCards.map(x=>x.card), allGameData[cardHand.roomId].gamedata.scoreBoardData.zhuCard)
+					var playedStats = getCardStats(playedCards, allGameData[cardHand.roomId].gamedata.scoreBoardData.zhuCard.card)
+					var remainingCardStats = getCardStats(cardHand.remainingCards.map(x=>x.card), allGameData[cardHand.roomId].gamedata.scoreBoardData.zhuCard.card)
 
 
 					if (playedStats.allZhu && allGameData[cardHand.roomId].gamedata.scoreBoardData.firstSuit != 'zhu') {
@@ -966,7 +968,7 @@ io.on('connection', function (socket){
 		var higherHand = cards.higherHand.map(x=>x.card)
 		var lowerHand = cards.lowerHand.map(x=>x.card)
 
-		var challengeStats = getCardStats(higherHand, allGameData[data.roomId].gamedata.scoreBoardData.zhuCard)
+		var challengeStats = getCardStats(higherHand, allGameData[data.roomId].gamedata.scoreBoardData.zhuCard.card)
 
 		var validChallenge = false
 
@@ -984,9 +986,9 @@ io.on('connection', function (socket){
 
 			console.log("take it back", cardHistory)
 			
-			var origStats = getCardStats(lowerHand, allGameData[data.roomId].gamedata.scoreBoardData.zhuCard)
+			var origStats = getCardStats(lowerHand, allGameData[data.roomId].gamedata.scoreBoardData.zhuCard.card)
 
-			var challengeHand = beatHand(origStats, challengeStats, false, allGameData[data.roomId].gamedata.scoreBoardData.zhuCard)
+			var challengeHand = beatHand(origStats, challengeStats, false, allGameData[data.roomId].gamedata.scoreBoardData.zhuCard.card)
 
 			if (challengeHand) {
 				// send id of first person 
@@ -1029,19 +1031,19 @@ io.on('connection', function (socket){
 		// server needs to keep track of what cards are played in a round and who plays it so we can clear the hand later / track for history	 	
 		//array of objects w/keys where user is the key and cards is the value
 
-		var playedStats = getCardStats(playedCards, allGameData[data.roomId].gamedata.scoreBoardData.zhuCard)
+		var playedStats = getCardStats(playedCards, allGameData[cardHand.roomId].gamedata.scoreBoardData.zhuCard.card)
 
 		// for non round leading hands, check to see whose is higher
 		// if (followedSuit) {
-		if (allGameData[data.roomId].gamedata.scoreBoardData.highestHand.cardStats.allZhu) {
+		if (allGameData[cardHand.roomId].gamedata.scoreBoardData.highestHand.cardStats.allZhu) {
 			// highest hand is zhu, need to beat the card, but must have zhu 
 			if (playedStats.allZhu) {
-				var newLeader = beatHand(allGameData[data.roomId].gamedata.scoreBoardData.highestHand.cardStats, playedStats, false, allGameData[data.roomId].gamedata.scoreBoardData.zhuCard)
+				var newLeader = beatHand(allGameData[cardHand.roomId].gamedata.scoreBoardData.highestHand.cardStats, playedStats, false, allGameData[cardHand.roomId].gamedata.scoreBoardData.zhuCard.card)
 				if (newLeader){
 					// if new highest hand, update data 
-					allGameData[data.roomId].gamedata.scoreBoardData.highestHand.cardStats = playedStats
-					allGameData[data.roomId].gamedata.scoreBoardData.highestHand.playedBy = cardHand.player
-					allGameData[data.roomId].gamedata.scoreBoardData.highestHand.cards = playedCards  
+					allGameData[cardHand.roomId].gamedata.scoreBoardData.highestHand.cardStats = playedStats
+					allGameData[cardHand.roomId].gamedata.scoreBoardData.highestHand.playedBy = cardHand.player
+					allGameData[cardHand.roomId].gamedata.scoreBoardData.highestHand.cards = playedCards  
 				}	
 			}
 			
@@ -1050,18 +1052,18 @@ io.on('connection', function (socket){
 
 			if (playedStats.allZhu) {
 				// attempt to bi
-				var newLeader = beatHand(allGameData[data.roomId].gamedata.scoreBoardData.highestHand.cardStats, playedStats, true, allGameData[data.roomId].gamedata.scoreBoardData.zhuCard)
+				var newLeader = beatHand(allGameData[cardHand.roomId].gamedata.scoreBoardData.highestHand.cardStats, playedStats, true, allGameData[cardHand.roomId].gamedata.scoreBoardData.zhuCard.card)
 			} else {
 				// regular card play
 				console.log('regular card play')
-				var newLeader = beatHand(allGameData[data.roomId].gamedata.scoreBoardData.highestHand.cardStats, playedStats, false, allGameData[data.roomId].gamedata.scoreBoardData.zhuCard)
+				var newLeader = beatHand(allGameData[cardHand.roomId].gamedata.scoreBoardData.highestHand.cardStats, playedStats, false, allGameData[cardHand.roomId].gamedata.scoreBoardData.zhuCard.card)
 			}
 			
 			if (newLeader){
 				// if new highest hand, update data 
-				allGameData[data.roomId].gamedata.scoreBoardData.highestHand.cardStats = playedStats
-				allGameData[data.roomId].gamedata.scoreBoardData.highestHand.playedBy = cardHand.player
-				allGameData[data.roomId].gamedata.scoreBoardData.highestHand.cards = playedCards  
+				allGameData[cardHand.roomId].gamedata.scoreBoardData.highestHand.cardStats = playedStats
+				allGameData[cardHand.roomId].gamedata.scoreBoardData.highestHand.playedBy = cardHand.player
+				allGameData[cardHand.roomId].gamedata.scoreBoardData.highestHand.cards = playedCards  
 			}	
 		}
 
@@ -1073,42 +1075,42 @@ io.on('connection', function (socket){
 		hand.player = cardHand.player
 		hand.cards = cardHand.cards
 		hand.stats = playedStats
-		allGameData[data.roomId].gamedata.cardHistory.push(hand)	  
-		allGameData[data.roomId].gamedata.roundHistory.points = pointsInRound
-		allGameData[data.roomId].gamedata.roundHistory.cardHistory = cardHistory
+		allGameData[cardHand.roomId].gamedata.cardHistory.push(hand)	  
+		allGameData[cardHand.roomId].gamedata.roundHistory.points = pointsInRound
+		allGameData[cardHand.roomId].gamedata.roundHistory.cardHistory = cardHistory
 
-		var pts = tallyScoreByTeam(allGameData[data.roomId].gamedata.scoreBoardData.players)
+		var pts = tallyScoreByTeam(allGameData[cardHand.roomId].gamedata.scoreBoardData.players)
 		console.log(pts)
 
 		// // update whose turn it is 
-		allGameData[data.roomId].gamedata.scoreBoardData = updateWhoseTurn(allGameData[data.roomId].gamedata.scoreBoardData, cardHand.player)
+		allGameData[cardHand.roomId].gamedata.scoreBoardData = updateWhoseTurn(allGameData[cardHand.roomId].gamedata.scoreBoardData, cardHand.player)
 			
 		// // need to determine end of round and reset turn tracker
-		var scoreBoardOrder = allGameData[data.roomId].gamedata.scoreBoardData.players
+		var scoreBoardOrder = allGameData[cardHand.roomId].gamedata.scoreBoardData.players
 		
-		if (allGameData[data.roomId].gamedata.scoreBoardData.players.filter(x=>x.playedHand == true).length == allGameData[data.roomId].gamedata.scoreBoardData.players.length) {
+		if (allGameData[cardHand.roomId].gamedata.scoreBoardData.players.filter(x=>x.playedHand == true).length == allGameData[cardHand.roomId].gamedata.scoreBoardData.players.length) {
 			//everybody has played a hand, determine winner of round and set who's playing first
-			var winnerID = allGameData[data.roomId].gamedata.scoreBoardData.highestHand.playedBy
+			var winnerID = allGameData[cardHand.roomId].gamedata.scoreBoardData.highestHand.playedBy
 			
-			allGameData[data.roomId].gamedata.scoreBoardData.whoseTurn = winnerID
+			allGameData[cardHand.roomId].gamedata.scoreBoardData.whoseTurn = winnerID
 			console.log('winner ', winnerID)
 
-			allGameData[data.roomId].gamedata.scoreBoardData.players[scoreBoardOrder.indexOf(winnerID)].points = allGameData[data.roomId].gamedata.scoreBoardData.players[scoreBoardOrder.indexOf(winnerID)].points + pointsInRound
+			allGameData[cardHand.roomId].gamedata.scoreBoardData.players[scoreBoardOrder.indexOf(winnerID)].points = allGameData[cardHand.roomId].gamedata.scoreBoardData.players[scoreBoardOrder.indexOf(winnerID)].points + pointsInRound
 
-			allGameData[data.roomId].gamedata.gameHistory.push(roundHistory)
+			allGameData[cardHand.roomId].gamedata.gameHistory.push(roundHistory)
 
 			// clear the board after 2 seconds 
 			setTimeout(function() {
-				io.in(data.roomId).emit('clearTable')
+				io.in(cardHand.roomId).emit('clearTable')
 
-				allGameData[data.roomId].gamedata.scoreBoardData.highestHand = {}
-				allGameData[data.roomId].gamedata.scoreBoardData.highestHand.cards = []
+				allGameData[cardHand.roomId].gamedata.scoreBoardData.highestHand = {}
+				allGameData[cardHand.roomId].gamedata.scoreBoardData.highestHand.cards = []
 
 				// reset round data 
-				allGameData[data.roomId].gamedata.pointsInRound = 0
-				allGameData[data.roomId].gamedata.roundHistory = {}
-				allGameData[data.roomId].gamedata.cardHistory = []
-				allGameData[data.roomId].gamedata.scoreBoardData.players.forEach(x=> x.playedHand = false)
+				allGameData[cardHand.roomId].gamedata.pointsInRound = 0
+				allGameData[cardHand.roomId].gamedata.roundHistory = {}
+				allGameData[cardHand.roomId].gamedata.cardHistory = []
+				allGameData[cardHand.roomId].gamedata.scoreBoardData.players.forEach(x=> x.playedHand = false)
 
 			}, 2000)	
 			
@@ -1123,16 +1125,16 @@ io.on('connection', function (socket){
 		if (!teamSet) {
 			// check to see if they're on your team 
 			// (cardsPlayed, cardSought, condition, cardsBefore)
-			var friend1 = areYouOnMyTeam(playedCards, allGameData[data.roomId].gamedata.askedFriend1, allGameData[data.roomId].gamedata.cardsBefore1)
+			var friend1 = areYouOnMyTeam(playedCards, allGameData[cardHand.roomId].gamedata.askedFriend1, allGameData[cardHand.roomId].gamedata.cardsBefore1)
 			cardsBefore1 = friend1.cardsBefore
-			var friend2 = areYouOnMyTeam(playedCards, allGameData[data.roomId].gamedata.askedFriend2, allGameData[data.roomId].gamedata.cardsBefore2)
+			var friend2 = areYouOnMyTeam(playedCards, allGameData[cardHand.roomId].gamedata.askedFriend2, allGameData[cardHand.roomId].gamedata.cardsBefore2)
 			cardsBefore2 = friend2.cardsBefore
 
 			if (friend1.onTheTeam == true || friend2.onTheTeam == true) {
-				allGameData[data.roomId].gamedata.scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].joinedZhuang = true
+				allGameData[cardHand.roomId].gamedata.scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].joinedZhuang = true
 
 				// wait do i actually need ids here?? or can i just down names 
-				allGameData[data.roomId].gamedata.scoreBoardData.zhuangJia.teammates.push({'name': allGameData[data.roomId].gamedata.scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].name, 'id': allGameData[data.roomId].gamedata.scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].id})
+				allGameData[cardHand.roomId].gamedata.scoreBoardData.zhuangJia.teammates.push({'name': allGameData[cardHand.roomId].gamedata.scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].name, 'id': allGameData[cardHand.roomId].gamedata.scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].id})
 			}
 			
 			console.log(friend1, friend2) 
@@ -1140,35 +1142,35 @@ io.on('connection', function (socket){
 
 		// if everybody has played their last hand, check koudi, add points depending on which team won
 		if (cardHand.lastRound == true) {
-			allGameData[data.roomId].gamedata.scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].lastRound = true
+			allGameData[cardHand.roomId].gamedata.scoreBoardData.players[scoreBoardOrder.indexOf(cardHand.player)].lastRound = true
 			// add kou di points -- track kou di on server side??? 
 			// calculate points by team --
-			var totalPoints = tallyScoreByTeam(allGameData[data.roomId].gamedata.scoreBoardData.players)
+			var totalPoints = tallyScoreByTeam(allGameData[cardHand.roomId].gamedata.scoreBoardData.players)
 			console.log('final score', totalPoints)
 
 			var kouDiPoints = 0
-			for(var i = 0; i < allGameData[data.roomId].kouDiCards.length; i++) {
-				kouDiPoints = kouDiPoints + countPoints(allGameData[data.roomId].kouDiCards[i])
+			for(var i = 0; i < allGameData[cardHand.roomId].kouDiCards.length; i++) {
+				kouDiPoints = kouDiPoints + countPoints(allGameData[cardHand.roomId].kouDiCards[i])
 			}
 			// NEED TO DEAL WITH WHO WON THE LAST HAND FOR KOUDI
 			// change levels and set zhuangjia 		
 
 			if (totalPoints == 0) {
 				// zhuangjia team goes up 3 
-				allGameData[data.roomId].gamedata.scoreBoardData.players.filter(x=> x.joinedZhuang == true).map(x => x.level = x.level + 3)
+				allGameData[cardHand.roomId].gamedata.scoreBoardData.players.filter(x=> x.joinedZhuang == true).map(x => x.level = x.level + 3)
 				// change zhuangjia, change game level number 
 				var nextZhuang = getNextZhuang(gameData, currentZhuang, zhuangJiaWon) 
-				var newInd = allGameData[data.roomId].gamedata.players.indexOf(nextZhuang)
+				var newInd = allGameData[cardHand.roomId].gamedata.players.indexOf(nextZhuang)
 				
-				setZhuangJiaInfo(data.roomId, newInd, nextZhuang)
+				setZhuangJiaInfo(cardHand.roomId, newInd, nextZhuang)
 
 			} else if (totalPoints < 60) {
 				//zhuang jia team goes up 2 levels 
-				allGameData[data.roomId].gamedata.scoreBoardData.players.filter(x=> x.joinedZhuang == true).map(x => x.level = x.level + 2)
+				allGameData[cardHand.roomId].gamedata.scoreBoardData.players.filter(x=> x.joinedZhuang == true).map(x => x.level = x.level + 2)
 
 			} else if (totalPoints < 110) {
 				//zhuang jia team goes up 1 level
-				allGameData[data.roomId].gamedata.scoreBoardData.players.filter(x=> x.joinedZhuang == true).map(x => x.level = x.level + 1)
+				allGameData[cardHand.roomId].gamedata.scoreBoardData.players.filter(x=> x.joinedZhuang == true).map(x => x.level = x.level + 1)
 
 
 			} else if (totalPoints < 160) {
@@ -1177,15 +1179,15 @@ io.on('connection', function (socket){
 
 			} else if (totalPoints < 210) {
 				//between 160 and 210, go up one, switch zhuangjia sides 
-				allGameData[data.roomId].gamedata.scoreBoardData.players.filter(x=> x.joinedZhuang == false).map(x => x.level = x.level + 1)
+				allGameData[cardHand.roomId].gamedata.scoreBoardData.players.filter(x=> x.joinedZhuang == false).map(x => x.level = x.level + 1)
 
 			} else if (totalPoints < 260) {
 				// btwn 210-260, zhuangjia flips, team goes up 2 levels 
-				allGameData[data.roomId].gamedata.scoreBoardData.players.filter(x=> x.joinedZhuang == false).map(x => x.level = x.level + 2)
+				allGameData[cardHand.roomId].gamedata.scoreBoardData.players.filter(x=> x.joinedZhuang == false).map(x => x.level = x.level + 2)
 				
 			} else {
 				// 260+, go up 3 levels 
-				allGameData[data.roomId].gamedata.scoreBoardData.players.filter(x=> x.joinedZhuang == false).map(x => x.level = x.level + 3)
+				allGameData[cardHand.roomId].gamedata.scoreBoardData.players.filter(x=> x.joinedZhuang == false).map(x => x.level = x.level + 3)
 
 			}
 			
@@ -1195,7 +1197,7 @@ io.on('connection', function (socket){
 
 		// need to track scores by team once teams are found 
 
-		io.in(roomId).emit('updateScore', {scoreBoard: allGameData[data.roomId].gamedata.scoreBoardData})
+		io.in(roomId).emit('updateScore', {scoreBoard: allGameData[cardHand.roomId].gamedata.scoreBoardData})
 		io.in(roomId).emit('cardPlayed', {cards: playedCards, player: cardHand.player, points: pointsInRound, detailed: cardHand.cards});
 		
 	});

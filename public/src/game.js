@@ -509,7 +509,7 @@ function create ()
 
 		dropZoneCards = data.lowerHand
 
-		socket.emit('can I go', {player: data.lowerHandId, cards: data.lowerHand, remainingCards: remaining, roomId: roomId})
+		socket.emit('can I go', {player: data.lowerHandId, cards: data.lowerHand, remainingCards: remaining, roomId: window.roomId})
 
 		// console.log(yourHandList)
 		// console.log(data)
@@ -590,7 +590,7 @@ function create ()
 		console.log('play your cards', dropZoneCardsSprites)
 		console.log(dropZoneCards)
 
-		socket.emit("playHand", {cards: dropZoneCards, player: playerid, lastRound: lastRound, remainingCards: yourHandList});
+		socket.emit("playHand", {cards: dropZoneCards, player: playerid, lastRound: lastRound, remainingCards: yourHandList, roomId: window.roomId});
 	
 		// tell server what we're playing to tell everybody else
 		dropZoneCardsTracker = []
@@ -610,7 +610,7 @@ function playHand() {
 		var remaining = remaining.filter(x=>x.card != dropZoneCards[i].card)
 	}
 	// console.log(remaining)
-	socket.emit('can I go', {player: playerid, cards: dropZoneCards, remainingCards: remaining})	
+	socket.emit('can I go', {player: playerid, cards: dropZoneCards, remainingCards: remaining, roomId: window.roomId})	
 }
 
 function showPlayedCards(detailedHand, playerId) {
