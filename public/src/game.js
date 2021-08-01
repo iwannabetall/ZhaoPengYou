@@ -277,7 +277,7 @@ function create ()
 	yourHand = []
 	
     socket.on('deal', (data)=> {
-		// console.log(data.card)
+		console.log(data.card)
 		
 		yourHandList.push({card: data.card, deck: data.deck})
 
@@ -543,12 +543,12 @@ function create ()
 		var gameInfo = data.liangData 
 		currentZhuangId = gameInfo.flippedBy
 		currentZhuang = gameInfo.name
-		var zhu = this.add.sprite(50, 100, gameInfo.zhuCard).setScale(cardSize * 0.7, cardSize * 0.7).setName(`Zhu${gameInfo.zhuCard}`)
+		var zhu = this.add.sprite(50, 100, gameInfo.zhuCard.card).setScale(cardSize * 0.7, cardSize * 0.7).setName(`Zhu${gameInfo.zhuCard.card}`)
 		liangGroup.add(zhu)
 		var zhulabel = this.add.text(50, 20, `Zhu flipped by ${gameInfo.name}`)
 		liangGroup.add(zhulabel)
 
-		zhuCard = data.liangData.zhuCard  // set this for sorting purposes
+		zhuCard = data.liangData.zhuCard.card  // set this for sorting purposes
 		console.log(zhuCard)
 		// console.log(liangGroup.length)
 		// console.log(liangGroup.children.entries.length)

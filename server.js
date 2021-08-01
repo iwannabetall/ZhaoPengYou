@@ -35,7 +35,7 @@ app.post('/savegamedata', gamedata.saveGameData)
 app.post('/resavedata', gamedata.resaveData)
 
 function createGameData(roomId){
-	console.log(roomId)
+	console.log('createGameData', roomId)
 	// gamedata key passed back and forth to client 
 	allGameData[roomId] = {}
 	allGameData[roomId].gamedata = {}
@@ -652,13 +652,18 @@ io.on('connection', function (socket){
 	// joining room via url, ie not creating new room 
 	url = url.split('/room/')
 	if (url.length > 1) {
+		console.log('room id', url[1], allGameData)
 		roomId = url[1]
 		if (allGameData[roomId]){
 			socket.emit('assign room', {roomId: roomId, data: allGameData[roomId]})
 			socket.join(roomId)	
 			
 		} else {
-			socket.emit('room dne')
+			// if joining a game via a link ie reopening a page via link, need to create url
+			console.log('join existing game url')
+			createGameData(roomId)
+			socket.emit('assign room', {roomId: roomId, data: allGameData[roomId]})
+			
 		}
 		
 		// io.to(socket.id).emit('loadGame')
@@ -1244,7 +1249,7 @@ io.on('connection', function (socket){
 
 	socket.on('set name', function(data) {  
 		console.log('set name', data) 
-		// console.log(allGameData[data.roomId].gamedata.players)
+		console.log(allGameData)
 		// console.log(socket.rooms)
 		// check to make sure theyre not reconnecting ie accidentally closed tab 
 		var alreadyJoined = allGameData[data.roomId].gamedata.players.indexOf(data.id) > -1 
@@ -1299,7 +1304,7 @@ io.on('connection', function (socket){
 			// make sure the card they flipped was for the right level --THIS IS WRONG - NEED TO TRACK WHO IS ZHUANG JIA 
 			var p = allGameData[data.roomId].gamedata.players.indexOf(data.id)
 			console.log('level needed to flip', allGameData[data.roomId].gamedata.scoreBoardData.players[p].level)
-			if (!data.card[0].includes(allGameData[data.roomId].gamedata.gameLevel)){
+			if (!data.card[0].card.includes(allGameData[data.roomId].gamedata.gameLevel)){
 				allMatch = false
 			}
 
@@ -1365,6 +1370,8 @@ io.on('connection', function (socket){
 				io.in(roomId).emit('fail', {msg: 'what are you doing??'})
 			}
 
+			console.log('zhuFlipped', zhuFlipped)
+			console.log('allMatch', allMatch)
 			if (zhuFlipped) {
 				io.in(roomId).emit('zhuLiangLe', {liangData: allGameData[data.roomId].gamedata.liangData})
 
